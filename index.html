@@ -209,49 +209,79 @@
                 </div>
             </div>
             
-            <!-- System Information Panel -->
-            <div class="system-info-panel">
+            <!-- System Information Section -->
+            <div class="system-info-section">
+                <h2 data-en="System Information" data-ar="معلومات النظام">System Information</h2>
                 <div class="info-grid">
-                    <div class="info-card">
-                        <div class="info-icon">
-                            <i class="fas fa-globe"></i>
+                    <!-- IP Address and Country -->
+                    <div class="info-card ip-card">
+                        <div class="info-card-header">
+                            <div class="info-icon">
+                                <i class="fas fa-globe"></i>
+                            </div>
+                            <h3 data-en="Connection Info" data-ar="معلومات الاتصال">Connection Info</h3>
                         </div>
-                        <div class="info-content">
-                            <h4 data-en="IP Address" data-ar="عنوان IP">IP Address</h4>
-                            <p class="info-value" id="ip-address">Loading...</p>
-                        </div>
-                    </div>
-                    
-                    <div class="info-card">
-                        <div class="info-icon">
-                            <i class="fas fa-flag"></i>
-                        </div>
-                        <div class="info-content">
-                            <h4 data-en="Country" data-ar="البلد">Country</h4>
-                            <div class="country-display" id="country-info">
-                                <img class="country-flag" id="country-flag" src="" alt="Country Flag" style="display: none;">
-                                <span class="country-name" id="country-name">Loading...</span>
+                        <div class="info-card-content">
+                            <div class="ip-info">
+                                <span class="info-label" data-en="IP Address" data-ar="عنوان IP">IP Address</span>
+                                <span class="ip-address" id="ip-address">Loading...</span>
+                            </div>
+                            <div class="country-info">
+                                <span class="info-label" data-en="Location" data-ar="الموقع">Location</span>
+                                <div class="location-display">
+                                    <span class="country-flag" id="country-flag">🏳️</span>
+                                    <span class="country-name" id="country-name">Loading...</span>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="info-card">
-                        <div class="info-icon">
-                            <i class="fas fa-clock"></i>
+
+                    <!-- Current Time -->
+                    <div class="info-card time-card">
+                        <div class="info-card-header">
+                            <div class="info-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <h3 data-en="Current Time" data-ar="الوقت الحالي">Current Time</h3>
                         </div>
-                        <div class="info-content">
-                            <h4 data-en="Local Time" data-ar="التوقيت المحلي">Local Time</h4>
-                            <p class="info-value" id="local-time">Loading...</p>
+                        <div class="info-card-content">
+                            <div class="time-info">
+                                <span class="info-label" data-en="Local Time" data-ar="الوقت المحلي">Local Time</span>
+                                <span class="current-time" id="system-time">--:--:--</span>
+                            </div>
+                            <div class="date-info">
+                                <span class="info-label" data-en="Date" data-ar="التاريخ">Date</span>
+                                <span class="current-date" id="system-date">--/--/----</span>
+                            </div>
                         </div>
                     </div>
-                    
-                    <div class="info-card">
-                        <div class="info-icon">
-                            <i class="fas fa-cloud-sun"></i>
+
+                    <!-- Weather Information -->
+                    <div class="info-card weather-card">
+                        <div class="info-card-header">
+                            <div class="info-icon">
+                                <i class="fas fa-cloud-sun"></i>
+                            </div>
+                            <h3 data-en="Weather" data-ar="الطقس">Weather</h3>
                         </div>
-                        <div class="info-content">
-                            <h4 data-en="Weather" data-ar="الطقس">Weather</h4>
-                            <p class="info-value" id="weather-info">Loading...</p>
+                        <div class="info-card-content">
+                            <div class="weather-main">
+                                <div class="weather-icon" id="weather-icon">🌤️</div>
+                                <div class="weather-details">
+                                    <span class="weather-temp" id="weather-temp">--°C</span>
+                                    <span class="weather-desc" id="weather-desc">Loading...</span>
+                                </div>
+                            </div>
+                            <div class="weather-extra">
+                                <div class="weather-item">
+                                    <i class="fas fa-tint"></i>
+                                    <span class="weather-humidity" id="weather-humidity">--%</span>
+                                </div>
+                                <div class="weather-item">
+                                    <i class="fas fa-wind"></i>
+                                    <span class="weather-wind" id="weather-wind">-- km/h</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

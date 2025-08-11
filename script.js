@@ -124,7 +124,6 @@ class WorkManagerApp {
             this.updateAllTables();
             this.applyTheme();
             this.setDefaultDates();
-            this.initSystemInfo();
             
             // Add a subtle entrance animation to the main content
             const mainContent = document.querySelector('.main-content');
@@ -141,578 +140,6 @@ class WorkManagerApp {
     }
 
 
-
-    // System Information functionality
-    initSystemInfo() {
-        this.updateLocalTime();
-        this.fetchIPAndCountry();
-        this.fetchWeather();
-        
-        // Update local time every second
-        setInterval(() => {
-            this.updateLocalTime();
-        }, 1000);
-        
-        // Test country flag display
-        this.testCountryFlag();
-        
-        // Retry failed requests after 30 seconds
-        setTimeout(() => {
-            this.retryFailedRequests();
-        }, 30000);
-    }
-
-    testCountryFlag() {
-        // Test if country flag is working by showing a test flag
-        const flagImg = document.getElementById('country-flag');
-        const nameSpan = document.getElementById('country-name');
-        
-        if (flagImg && nameSpan) {
-            // Show a test flag for 2 seconds to verify image display
-            const originalSrc = flagImg.src;
-            const originalText = nameSpan.textContent;
-            
-            flagImg.src = this.getCountryFlag('AE');
-            flagImg.style.display = 'inline-block';
-            nameSpan.textContent = 'Test Flag';
-            
-            setTimeout(() => {
-                flagImg.src = originalSrc;
-                nameSpan.textContent = originalText;
-            }, 2000);
-        }
-    }
-
-    retryFailedRequests() {
-        const ipElement = document.getElementById('ip-address');
-        const countryElement = document.getElementById('country-info');
-        const weatherElement = document.getElementById('weather-info');
-        
-        // Retry IP and country if they failed
-        if (ipElement && (ipElement.textContent === 'IP unavailable' || ipElement.textContent === 'Loading...')) {
-            this.fetchIPAndCountry();
-        }
-        
-        if (countryElement && (countryElement.textContent === 'Location unavailable' || countryElement.textContent === 'Loading...')) {
-            this.fetchIPAndCountry();
-        }
-        
-        // Retry weather if it failed or show simple weather
-        if (weatherElement && (weatherElement.textContent.includes('Loading') || weatherElement.textContent.includes('unavailable'))) {
-            // Try to fetch real weather first
-            this.fetchWeather();
-            
-            // If still fails after 5 seconds, show simple weather
-            setTimeout(() => {
-                if (weatherElement.textContent.includes('Loading') || weatherElement.textContent.includes('unavailable')) {
-                    this.setSimpleWeather();
-                }
-            }, 5000);
-        }
-    }
-
-    updateLocalTime() {
-        const localTimeElement = document.getElementById('local-time');
-        if (localTimeElement) {
-            const now = new Date();
-            const locale = this.currentLanguage === 'ar' ? 'ar-SA' : 'en-US';
-            
-            const timeString = now.toLocaleTimeString(locale, {
-                hour12: false,
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
-            });
-            
-            const dateString = now.toLocaleDateString(locale, {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric'
-            });
-            
-            localTimeElement.textContent = `${timeString} - ${dateString}`;
-        }
-    }
-
-    async fetchIPAndCountry() {
-        try {
-            // Show loading states
-            const ipElement = document.getElementById('ip-address');
-            const countryElement = document.getElementById('country-info');
-            
-            if (ipElement) {
-                ipElement.textContent = this.currentLanguage === 'ar' ? 'جاري التحميل...' : 'Loading...';
-            }
-            if (countryElement) {
-                const nameSpan = document.getElementById('country-name');
-                if (nameSpan) {
-                    nameSpan.textContent = this.currentLanguage === 'ar' ? 'جاري التحميل...' : 'Loading...';
-                }
-            }
-            
-            // Try multiple IP APIs for better reliability
-            let ipData = null;
-            
-            // Try ipify.org first
-            try {
-                const response = await fetch('https://api.ipify.org?format=json');
-                if (response.ok) {
-                    ipData = await response.json();
-                }
-            } catch (e) {
-                console.log('ipify.org failed, trying alternative...');
-            }
-            
-            // If ipify failed, try alternative
-            if (!ipData) {
-                try {
-                    const response = await fetch('https://api64.ipify.org?format=json');
-                    if (response.ok) {
-                        ipData = await response.json();
-                    }
-                } catch (e) {
-                    console.log('ipify64 failed, trying httpbin...');
-                }
-            }
-            
-            // If still no IP, try httpbin
-            if (!ipData) {
-                try {
-                    const response = await fetch('https://httpbin.org/ip');
-                    if (response.ok) {
-                        const data = await response.json();
-                        ipData = { ip: data.origin };
-                    }
-                } catch (e) {
-                    console.log('httpbin failed');
-                }
-            }
-            
-            // Update IP display
-            if (ipElement) {
-                if (ipData && ipData.ip) {
-                    ipElement.textContent = ipData.ip;
-                } else {
-                    ipElement.textContent = this.currentLanguage === 'ar' ? 'غير متوفر' : 'Unavailable';
-                }
-            }
-            
-            // Fetch country information using IP
-            if (ipData && ipData.ip) {
-                try {
-                    // Try ipapi.co first
-                    const geoResponse = await fetch(`https://ipapi.co/${ipData.ip}/json/`);
-                    if (geoResponse.ok) {
-                        const geoData = await geoResponse.json();
-                        
-                        if (countryElement && geoData.country_name) {
-                            const flagUrl = this.getCountryFlag(geoData.country_code);
-                            const countryName = this.currentLanguage === 'ar' ? 
-                                this.getArabicCountryName(geoData.country_code) : 
-                                geoData.country_name;
-                            this.updateCountryDisplay(flagUrl, countryName);
-                            return;
-                        }
-                    }
-                } catch (geoError) {
-                    console.log('ipapi.co failed, trying alternative...');
-                }
-                
-                // Try alternative geolocation API
-                try {
-                    const geoResponse = await fetch(`https://ipapi.com/ip_api.php?ip=${ipData.ip}`);
-                    if (geoResponse.ok) {
-                        const geoData = await geoResponse.json();
-                        
-                        if (countryElement && geoData.country_name) {
-                            const flagUrl = this.getCountryFlag(geoData.country_code);
-                            const countryName = this.currentLanguage === 'ar' ? 
-                                this.getArabicCountryName(geoData.country_code) : 
-                                geoData.country_name;
-                            this.updateCountryDisplay(flagUrl, countryName);
-                            return;
-                        }
-                    }
-                } catch (geoError2) {
-                    console.log('ipapi.com failed');
-                }
-                
-                // Try a simple geolocation API
-                try {
-                    const geoResponse = await fetch(`https://ipinfo.io/${ipData.ip}/json`);
-                    if (geoResponse.ok) {
-                        const geoData = await geoResponse.json();
-                        
-                        if (countryElement && geoData.country) {
-                            const flagUrl = this.getCountryFlag(geoData.country);
-                            const countryName = this.currentLanguage === 'ar' ? 
-                                this.getArabicCountryName(geoData.country) : 
-                                geoData.country;
-                            this.updateCountryDisplay(flagUrl, countryName);
-                            return;
-                        }
-                    }
-                } catch (geoError3) {
-                    console.log('ipinfo.io failed');
-                }
-                
-                // If all geolocation APIs fail, show a default location
-                if (countryElement) {
-                    // Show a default location based on common scenarios
-                    const defaultFlagUrl = this.getCountryFlag('AE');
-                    const defaultCountryName = this.currentLanguage === 'ar' ? 'الإمارات العربية المتحدة' : 'United Arab Emirates';
-                    this.updateCountryDisplay(defaultFlagUrl, defaultCountryName);
-                }
-            } else {
-                if (countryElement) {
-                    const nameSpan = document.getElementById('country-name');
-                    if (nameSpan) {
-                        nameSpan.textContent = this.currentLanguage === 'ar' ? 'موقع غير معروف' : 'Unknown Location';
-                    }
-                }
-            }
-        } catch (error) {
-            console.error('Error fetching IP and country data:', error);
-            if (ipElement) {
-                ipElement.textContent = this.currentLanguage === 'ar' ? 'غير متوفر' : 'Unavailable';
-            }
-            if (countryElement) {
-                const nameSpan = document.getElementById('country-name');
-                if (nameSpan) {
-                    nameSpan.textContent = this.currentLanguage === 'ar' ? 'موقع غير معروف' : 'Unknown Location';
-                }
-            }
-        }
-    }
-
-    async fetchWeather() {
-        try {
-            const weatherElement = document.getElementById('weather-info');
-            if (!weatherElement) return;
-            
-            // Show loading state
-            weatherElement.textContent = this.currentLanguage === 'ar' ? '🌤️ جاري تحميل الطقس...' : '🌤️ Loading weather...';
-            
-            // Try multiple weather APIs for better reliability
-            let weatherData = null;
-            
-            // Try Open-Meteo API (most reliable)
-            try {
-                const response = await fetch('https://api.open-meteo.com/v1/forecast?latitude=25.2048&longitude=55.2708&current=temperature_2m,weather_code&timezone=auto');
-                if (response.ok) {
-                    weatherData = await response.json();
-                    if (weatherData.current) {
-                        const temp = Math.round(weatherData.current.temperature_2m);
-                        const weatherCode = weatherData.current.weather_code;
-                        const desc = this.getWeatherDescription(weatherCode);
-                        const icon = this.getWeatherIconFromCode(weatherCode);
-                        weatherElement.textContent = `${icon} ${temp}°C ${desc}`;
-                        return;
-                    }
-                }
-            } catch (error) {
-                console.log('Open-Meteo API failed, trying alternative...');
-            }
-            
-            // Try wttr.in API
-            try {
-                const response = await fetch('https://wttr.in/Dubai?format=j1');
-                if (response.ok) {
-                    weatherData = await response.json();
-                    if (weatherData.current_condition && weatherData.current_condition[0]) {
-                        const current = weatherData.current_condition[0];
-                        const temp = current.temp_C;
-                        const desc = current.weatherDesc[0].value;
-                        const icon = this.getWeatherIconFromDesc(desc);
-                        weatherElement.textContent = `${icon} ${temp}°C ${desc}`;
-                        return;
-                    }
-                }
-            } catch (error) {
-                console.log('wttr.in API failed, trying alternative...');
-            }
-            
-            // Try a simple text-based weather API
-            try {
-                const response = await fetch('https://wttr.in/Dubai?format=3');
-                if (response.ok) {
-                    const text = await response.text();
-                    if (text && text.includes('°C')) {
-                        // Extract temperature from text
-                        const tempMatch = text.match(/(\d+)°C/);
-                        const temp = tempMatch ? tempMatch[1] : '25';
-                        weatherElement.textContent = `🌤️ ${temp}°C Dubai`;
-                        return;
-                    }
-                }
-            } catch (error) {
-                console.log('Text weather API failed');
-            }
-            
-            // If all APIs fail, show a simple weather display
-            this.setSimpleWeather();
-            
-        } catch (error) {
-            console.error('Error fetching weather data:', error);
-            this.setSimpleWeather();
-        }
-    }
-
-    setSimpleWeather() {
-        const weatherElement = document.getElementById('weather-info');
-        if (weatherElement) {
-            // Show a simple weather display with current time-based weather
-            const now = new Date();
-            const hour = now.getHours();
-            let weatherIcon = '🌤️';
-            let weatherDesc = 'Partly cloudy';
-            
-            // Simple weather logic based on time of day
-            if (hour >= 6 && hour < 12) {
-                weatherIcon = '☀️';
-                weatherDesc = this.currentLanguage === 'ar' ? 'مشمس' : 'Sunny';
-            } else if (hour >= 12 && hour < 18) {
-                weatherIcon = '🌤️';
-                weatherDesc = this.currentLanguage === 'ar' ? 'غائم جزئياً' : 'Partly cloudy';
-            } else if (hour >= 18 && hour < 22) {
-                weatherIcon = '🌅';
-                weatherDesc = this.currentLanguage === 'ar' ? 'غروب الشمس' : 'Sunset';
-            } else {
-                weatherIcon = '🌙';
-                weatherDesc = this.currentLanguage === 'ar' ? 'ليلاً' : 'Night';
-            }
-            
-            // Generate a reasonable temperature based on time
-            let temp = 25; // Default temperature
-            if (hour >= 6 && hour < 12) temp = 28; // Morning
-            else if (hour >= 12 && hour < 18) temp = 32; // Afternoon
-            else if (hour >= 18 && hour < 22) temp = 26; // Evening
-            else temp = 22; // Night
-            
-            weatherElement.textContent = `${weatherIcon} ${temp}°C ${weatherDesc}`;
-        }
-    }
-
-    setErrorState(elementId, message) {
-        const element = document.getElementById(elementId);
-        if (element) {
-            // Translate error messages
-            let translatedMessage = message;
-            if (this.currentLanguage === 'ar') {
-                const translations = {
-                    'IP unavailable': 'عنوان IP غير متوفر',
-                    'Location unavailable': 'الموقع غير متوفر',
-                    'Unable to fetch IP': 'لا يمكن جلب عنوان IP',
-                    'Unable to fetch location': 'لا يمكن جلب الموقع'
-                };
-                translatedMessage = translations[message] || message;
-            }
-            element.textContent = translatedMessage;
-            element.style.color = '#ef4444';
-        }
-    }
-
-    getCountryFlag(countryCode) {
-        if (!countryCode) return '🌍';
-        
-        // Convert to uppercase for consistency
-        const upperCode = countryCode.toUpperCase();
-        
-        // Use a more reliable flag API
-        return `https://flagcdn.com/24x18/${upperCode.toLowerCase()}.png`;
-    }
-
-    updateCountryDisplay(flagUrl, countryName) {
-        const flagImg = document.getElementById('country-flag');
-        const nameSpan = document.getElementById('country-name');
-        
-        if (flagImg && nameSpan) {
-            // Set the country name first
-            nameSpan.textContent = countryName;
-            
-            // Try to load the flag image with error handling
-            flagImg.onload = function() {
-                flagImg.style.display = 'inline-block';
-                // Reset the text to just the country name when image loads successfully
-                nameSpan.textContent = countryName;
-            };
-            
-            flagImg.onerror = function() {
-                // If flag fails to load, hide the image and show emoji instead
-                flagImg.style.display = 'none';
-                const emojiFlag = this.getCountryFlagEmoji(flagUrl);
-                nameSpan.textContent = `${emojiFlag} ${countryName}`;
-            }.bind(this);
-            
-            // Set a timeout to show emoji if image takes too long to load
-            setTimeout(() => {
-                if (flagImg.style.display !== 'inline-block') {
-                    flagImg.style.display = 'none';
-                    const emojiFlag = this.getCountryFlagEmoji(flagUrl);
-                    nameSpan.textContent = `${emojiFlag} ${countryName}`;
-                }
-            }, 3000);
-            
-            flagImg.src = flagUrl;
-        }
-    }
-
-    getCountryFlagEmoji(flagUrl) {
-        // Extract country code from URL and return emoji
-        const countryCode = flagUrl.split('/').pop().split('.')[0].toUpperCase();
-        
-        const flagEmojis = {
-            'US': '🇺🇸', 'GB': '🇬🇧', 'DE': '🇩🇪', 'FR': '🇫🇷', 'IT': '🇮🇹', 'ES': '🇪🇸',
-            'CA': '🇨🇦', 'AU': '🇦🇺', 'JP': '🇯🇵', 'CN': '🇨🇳', 'IN': '🇮🇳', 'BR': '🇧🇷',
-            'RU': '🇷🇺', 'SA': '🇸🇦', 'AE': '🇦🇪', 'EG': '🇪🇬', 'TR': '🇹🇷', 'IR': '🇮🇷',
-            'PK': '🇵🇰', 'BD': '🇧🇩', 'NG': '🇳🇬', 'ZA': '🇿🇦', 'MX': '🇲🇽', 'AR': '🇦🇷',
-            'CL': '🇨🇱', 'CO': '🇨🇴', 'PE': '🇵🇪', 'VE': '🇻🇪', 'MY': '🇲🇾', 'TH': '🇹🇭',
-            'VN': '🇻🇳', 'PH': '🇵🇭', 'ID': '🇮🇩', 'SG': '🇸🇬', 'HK': '🇭🇰', 'TW': '🇹🇼',
-            'KR': '🇰🇷', 'NL': '🇳🇱', 'BE': '🇧🇪', 'CH': '🇨🇭', 'AT': '🇦🇹', 'SE': '🇸🇪',
-            'NO': '🇳🇴', 'DK': '🇩🇰', 'FI': '🇫🇮', 'PL': '🇵🇱', 'CZ': '🇨🇿', 'HU': '🇭🇺',
-            'RO': '🇷🇴', 'BG': '🇧🇬', 'HR': '🇭🇷', 'SI': '🇸🇮', 'SK': '🇸🇰', 'LT': '🇱🇹',
-            'LV': '🇱🇻', 'EE': '🇪🇪', 'IE': '🇮🇪', 'PT': '🇵🇹', 'GR': '🇬🇷', 'CY': '🇨🇾',
-            'MT': '🇲🇹', 'LU': '🇱🇺', 'IS': '🇮🇸', 'LI': '🇱🇮', 'MC': '🇲🇨', 'AD': '🇦🇩',
-            'SM': '🇸🇲', 'VA': '🇻🇦', 'JO': '🇯🇴', 'LB': '🇱🇧', 'SY': '🇸🇾', 'IQ': '🇮🇶',
-            'KW': '🇰🇼', 'QA': '🇶🇦', 'BH': '🇧🇭', 'OM': '🇴🇲', 'YE': '🇾🇪', 'SO': '🇸🇴',
-            'DJ': '🇩🇯', 'ER': '🇪🇷', 'ET': '🇪🇹', 'KE': '🇰🇪', 'TZ': '🇹🇿', 'UG': '🇺🇬',
-            'RW': '🇷🇼', 'BI': '🇧🇮', 'MW': '🇲🇼', 'ZM': '🇿🇲', 'ZW': '🇿🇼', 'BW': '🇧🇼',
-            'NA': '🇳🇦', 'LS': '🇱🇸', 'SZ': '🇸🇿', 'MG': '🇲🇬', 'MU': '🇲🇺', 'SC': '🇸🇨',
-            'KM': '🇰🇲', 'YT': '🇾🇹', 'RE': '🇷🇪', 'MZ': '🇲🇿', 'AO': '🇦🇴', 'CG': '🇨🇬',
-            'CD': '🇨🇩', 'GA': '🇬🇦', 'GQ': '🇬🇶', 'ST': '🇸🇹', 'CM': '🇨🇲', 'CF': '🇨🇫',
-            'TD': '🇹🇩', 'NE': '🇳🇪', 'ML': '🇲🇱', 'BF': '🇧🇫', 'CI': '🇨🇮', 'GH': '🇬🇭',
-            'TG': '🇹🇬', 'BJ': '🇧🇯', 'SN': '🇸🇳', 'GM': '🇬🇲', 'GN': '🇬🇳', 'GW': '🇬🇼',
-            'SL': '🇸🇱', 'LR': '🇱🇷'
-        };
-        
-        return flagEmojis[countryCode] || '🌍';
-    }
-
-    getArabicCountryName(countryCode) {
-        const arabicNames = {
-            'US': 'الولايات المتحدة', 'GB': 'المملكة المتحدة', 'DE': 'ألمانيا', 'FR': 'فرنسا',
-            'IT': 'إيطاليا', 'ES': 'إسبانيا', 'CA': 'كندا', 'AU': 'أستراليا', 'JP': 'اليابان',
-            'CN': 'الصين', 'IN': 'الهند', 'BR': 'البرازيل', 'RU': 'روسيا', 'SA': 'المملكة العربية السعودية',
-            'AE': 'الإمارات العربية المتحدة', 'EG': 'مصر', 'TR': 'تركيا', 'IR': 'إيران',
-            'PK': 'باكستان', 'BD': 'بنغلاديش', 'NG': 'نيجيريا', 'ZA': 'جنوب أفريقيا',
-            'MX': 'المكسيك', 'AR': 'الأرجنتين', 'CL': 'تشيلي', 'CO': 'كولومبيا', 'PE': 'بيرو',
-            'VE': 'فنزويلا', 'MY': 'ماليزيا', 'TH': 'تايلاند', 'VN': 'فيتنام', 'PH': 'الفلبين',
-            'ID': 'إندونيسيا', 'SG': 'سنغافورة', 'HK': 'هونغ كونغ', 'TW': 'تايوان',
-            'KR': 'كوريا الجنوبية', 'NL': 'هولندا', 'BE': 'بلجيكا', 'CH': 'سويسرا',
-            'AT': 'النمسا', 'SE': 'السويد', 'NO': 'النرويج', 'DK': 'الدنمارك', 'FI': 'فنلندا',
-            'PL': 'بولندا', 'CZ': 'جمهورية التشيك', 'HU': 'المجر', 'RO': 'رومانيا',
-            'BG': 'بلغاريا', 'HR': 'كرواتيا', 'SI': 'سلوفينيا', 'SK': 'سلوفاكيا',
-            'LT': 'ليتوانيا', 'LV': 'لاتفيا', 'EE': 'إستونيا', 'IE': 'أيرلندا',
-            'PT': 'البرتغال', 'GR': 'اليونان', 'CY': 'قبرص', 'MT': 'مالطا', 'LU': 'لوكسمبورغ',
-            'IS': 'آيسلندا', 'LI': 'ليختنشتاين', 'MC': 'موناكو', 'AD': 'أندورا',
-            'SM': 'سان مارينو', 'VA': 'الفاتيكان', 'JO': 'الأردن', 'LB': 'لبنان',
-            'SY': 'سوريا', 'IQ': 'العراق', 'KW': 'الكويت', 'QA': 'قطر', 'BH': 'البحرين',
-            'OM': 'عمان', 'YE': 'اليمن', 'SO': 'الصومال', 'DJ': 'جيبوتي', 'ER': 'إريتريا',
-            'ET': 'إثيوبيا', 'KE': 'كينيا', 'TZ': 'تنزانيا', 'UG': 'أوغندا', 'RW': 'رواندا',
-            'BI': 'بوروندي', 'MW': 'ملاوي', 'ZM': 'زامبيا', 'ZW': 'زيمبابوي', 'BW': 'بوتسوانا',
-            'NA': 'ناميبيا', 'LS': 'ليسوتو', 'SZ': 'إسواتيني', 'MG': 'مدغشقر', 'MU': 'موريشيوس',
-            'SC': 'سيشل', 'KM': 'جزر القمر', 'YT': 'مايوت', 'RE': 'ريونيون', 'MZ': 'موزمبيق',
-            'AO': 'أنغولا', 'CG': 'جمهورية الكونغو', 'CD': 'جمهورية الكونغو الديمقراطية',
-            'GA': 'الغابون', 'GQ': 'غينيا الاستوائية', 'ST': 'ساو تومي وبرينسيبي',
-            'CM': 'الكاميرون', 'CF': 'جمهورية أفريقيا الوسطى', 'TD': 'تشاد', 'NE': 'النيجر',
-            'ML': 'مالي', 'BF': 'بوركينا فاسو', 'CI': 'ساحل العاج', 'GH': 'غانا',
-            'TG': 'توغو', 'BJ': 'بنين', 'SN': 'السنغال', 'GM': 'غامبيا', 'GN': 'غينيا',
-            'GW': 'غينيا بيساو', 'SL': 'سيراليون', 'LR': 'ليبيريا'
-        };
-        return arabicNames[countryCode] || 'غير معروف';
-    }
-
-    getWeatherIcon(weatherMain) {
-        const weatherIcons = {
-            'Clear': '☀️', 'Clouds': '☁️', 'Rain': '🌧️', 'Drizzle': '🌦️',
-            'Thunderstorm': '⛈️', 'Snow': '❄️', 'Mist': '🌫️', 'Smoke': '🌫️',
-            'Haze': '🌫️', 'Dust': '🌫️', 'Fog': '🌫️', 'Sand': '🌫️',
-            'Ash': '🌫️', 'Squall': '💨', 'Tornado': '🌪️'
-        };
-        return weatherIcons[weatherMain] || '🌤️';
-    }
-
-    getWeatherIconFromDesc(description) {
-        const desc = description.toLowerCase();
-        if (desc.includes('sunny') || desc.includes('clear')) return '☀️';
-        if (desc.includes('cloudy') || desc.includes('overcast')) return '☁️';
-        if (desc.includes('rain') || desc.includes('drizzle')) return '🌧️';
-        if (desc.includes('snow')) return '❄️';
-        if (desc.includes('thunder') || desc.includes('storm')) return '⛈️';
-        if (desc.includes('fog') || desc.includes('mist')) return '🌫️';
-        if (desc.includes('wind')) return '💨';
-        return '🌤️';
-    }
-
-    getWeatherIconFromCode(code) {
-        // WMO Weather interpretation codes
-        const weatherIcons = {
-            0: '☀️',   // Clear sky
-            1: '🌤️',   // Mainly clear
-            2: '⛅',    // Partly cloudy
-            3: '☁️',    // Overcast
-            45: '🌫️',  // Foggy
-            48: '🌫️',  // Depositing rime fog
-            51: '🌦️',  // Light drizzle
-            53: '🌦️',  // Moderate drizzle
-            55: '🌧️',  // Dense drizzle
-            56: '🌧️',  // Light freezing drizzle
-            57: '🌧️',  // Dense freezing drizzle
-            61: '🌧️',  // Slight rain
-            63: '🌧️',  // Moderate rain
-            65: '🌧️',  // Heavy rain
-            66: '🌧️',  // Light freezing rain
-            67: '🌧️',  // Heavy freezing rain
-            71: '❄️',   // Slight snow fall
-            73: '❄️',   // Moderate snow fall
-            75: '❄️',   // Heavy snow fall
-            77: '❄️',   // Snow grains
-            80: '🌧️',   // Slight rain showers
-            81: '🌧️',   // Moderate rain showers
-            82: '🌧️',   // Violent rain showers
-            85: '❄️',   // Slight snow showers
-            86: '❄️',   // Heavy snow showers
-            95: '⛈️',   // Thunderstorm
-            96: '⛈️',   // Thunderstorm with slight hail
-            99: '⛈️'    // Thunderstorm with heavy hail
-        };
-        return weatherIcons[code] || '🌤️';
-    }
-
-    getWeatherDescription(code) {
-        // WMO Weather interpretation codes
-        const weatherDescriptions = {
-            0: 'Clear sky',
-            1: 'Mainly clear',
-            2: 'Partly cloudy',
-            3: 'Overcast',
-            45: 'Foggy',
-            48: 'Depositing rime fog',
-            51: 'Light drizzle',
-            53: 'Moderate drizzle',
-            55: 'Dense drizzle',
-            56: 'Light freezing drizzle',
-            57: 'Dense freezing drizzle',
-            61: 'Slight rain',
-            63: 'Moderate rain',
-            65: 'Heavy rain',
-            66: 'Light freezing rain',
-            67: 'Heavy freezing rain',
-            71: 'Slight snow fall',
-            73: 'Moderate snow fall',
-            75: 'Heavy snow fall',
-            77: 'Snow grains',
-            80: 'Slight rain showers',
-            81: 'Moderate rain showers',
-            82: 'Violent rain showers',
-            85: 'Slight snow showers',
-            86: 'Heavy snow showers',
-            95: 'Thunderstorm',
-            96: 'Thunderstorm with slight hail',
-            99: 'Thunderstorm with heavy hail'
-        };
-        return weatherDescriptions[code] || 'Unknown';
-    }
 
     // Data Management
     saveData() {
@@ -1047,6 +474,9 @@ class WorkManagerApp {
         document.getElementById('paid-debts').textContent = `€${stats.completedDebts.toFixed(2)}`;
 
         this.updateRecentActivity();
+        
+        // Initialize system information when dashboard is updated
+        this.initSystemInfo();
     }
 
     calculateStats() {
@@ -1896,6 +1326,473 @@ class WorkManagerApp {
                 this.showSuccessMessage(this.getText('Debt deleted!', 'تم حذف الدين!'));
             }
         );
+    }
+
+    // System Information Management
+    async fetchIPInfo() {
+        try {
+            const ipElement = document.getElementById('ip-address');
+            const countryFlagElement = document.getElementById('country-flag');
+            const countryNameElement = document.getElementById('country-name');
+
+            if (!ipElement || !countryFlagElement || !countryNameElement) {
+                console.log('IP elements not found');
+                return;
+            }
+
+            // Show loading state
+            ipElement.textContent = this.getText('Loading...', 'جاري التحميل...');
+            countryNameElement.textContent = this.getText('Loading...', 'جاري التحميل...');
+            countryFlagElement.textContent = '🏳️';
+
+            // Try multiple IP services for better reliability
+            let data = null;
+            
+            // First try: ipapi.co
+            try {
+                const response = await fetch('https://ipapi.co/json/', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                    },
+                    timeout: 5000
+                });
+                
+                if (response.ok) {
+                    data = await response.json();
+                    console.log('IP data from ipapi.co:', data);
+                }
+            } catch (error) {
+                console.log('ipapi.co failed, trying alternative...');
+            }
+
+            // Second try: ipinfo.io if first failed
+            if (!data) {
+                try {
+                    const response = await fetch('https://ipinfo.io/json', {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json',
+                        },
+                        timeout: 5000
+                    });
+                    
+                    if (response.ok) {
+                        data = await response.json();
+                        console.log('IP data from ipinfo.io:', data);
+                    }
+            } catch (error) {
+                console.log('ipinfo.io also failed');
+            }
+            }
+
+            // Third try: httpbin.org for basic IP
+            if (!data) {
+                try {
+                    const response = await fetch('https://httpbin.org/ip', {
+                        method: 'GET',
+                        timeout: 5000
+                    });
+                    
+                    if (response.ok) {
+                        const basicData = await response.json();
+                        data = {
+                            ip: basicData.origin,
+                            country_name: this.getText('Unknown', 'غير معروف'),
+                            country_code: 'XX'
+                        };
+                        console.log('Basic IP data from httpbin:', data);
+                    }
+                } catch (error) {
+                    console.log('httpbin.org also failed');
+                }
+            }
+            
+            if (data) {
+                console.log('Processing IP data:', data);
+                
+                // Update IP address
+                ipElement.textContent = data.ip || this.getText('Unknown', 'غير معروف');
+                
+                // Update country information
+                let countryName = data.country_name || data.country;
+                let countryCode = data.country_code || data.country;
+                
+                console.log('Country info:', { countryName, countryCode });
+                
+                if (countryName && countryCode) {
+                    countryNameElement.textContent = countryName;
+                    const flag = this.getCountryFlag(countryCode);
+                    countryFlagElement.textContent = flag;
+                    console.log('Updated country display:', { countryName, countryCode, flag });
+                } else {
+                    countryNameElement.textContent = this.getText('Unknown', 'غير معروف');
+                    countryFlagElement.textContent = '🏳️';
+                    console.log('No country info available, showing default');
+                }
+
+                // Store location data for weather
+                if (data.latitude && data.longitude) {
+                    this.userLocation = {
+                        lat: data.latitude,
+                        lon: data.longitude,
+                        city: data.city || data.country_name
+                    };
+                    console.log('Location data stored:', this.userLocation);
+                    this.fetchWeatherInfo();
+                } else if (data.loc) {
+                    // Handle ipinfo.io format
+                    const [lat, lon] = data.loc.split(',');
+                    this.userLocation = {
+                        lat: parseFloat(lat),
+                        lon: parseFloat(lon),
+                        city: data.city || data.country
+                    };
+                    console.log('Location data from ipinfo.io stored:', this.userLocation);
+                    this.fetchWeatherInfo();
+                }
+            } else {
+                throw new Error('All IP services failed');
+            }
+
+        } catch (error) {
+            console.error('Error fetching IP information:', error);
+            
+            const ipElement = document.getElementById('ip-address');
+            const countryFlagElement = document.getElementById('country-flag');
+            const countryNameElement = document.getElementById('country-name');
+
+            if (ipElement) {
+                ipElement.textContent = this.getText('Error loading IP', 'خطأ في تحميل IP');
+            }
+            if (countryNameElement) {
+                countryNameElement.textContent = this.getText('Error loading country', 'خطأ في تحميل البلد');
+            }
+            if (countryFlagElement) {
+                countryFlagElement.textContent = '🏳️';
+            }
+        }
+    }
+
+    getCountryFlag(countryCode) {
+        // Convert country code to flag emoji
+        if (!countryCode || countryCode.length !== 2) {
+            console.log('Invalid country code:', countryCode);
+            return '🏳️';
+        }
+        
+        try {
+            // Method 1: Using code points
+            const codePoints = countryCode
+                .toUpperCase()
+                .split('')
+                .map(char => 127397 + char.charCodeAt());
+            
+            const flag = String.fromCodePoint(...codePoints);
+            console.log(`Country code: ${countryCode}, Flag: ${flag}`);
+            
+            // Check if flag is valid (not just squares)
+            if (flag && flag.length > 0 && !flag.includes('')) {
+                return flag;
+            }
+            
+            // Method 2: Alternative approach
+            const altFlag = this.getCountryFlagAlternative(countryCode);
+            if (altFlag) {
+                console.log(`Using alternative flag for ${countryCode}: ${altFlag}`);
+                return altFlag;
+            }
+            
+            return '🏳️';
+        } catch (error) {
+            console.error('Error generating flag for country code:', countryCode, error);
+            return this.getCountryFlagAlternative(countryCode) || '🏳️';
+        }
+    }
+
+    getCountryFlagAlternative(countryCode) {
+        // Alternative method using different code point calculation
+        try {
+            const firstChar = countryCode.charAt(0).toUpperCase();
+            const secondChar = countryCode.charAt(1).toUpperCase();
+            
+            const firstCode = firstChar.charCodeAt(0) - 65 + 0x1F1E6; // Regional Indicator A
+            const secondCode = secondChar.charCodeAt(0) - 65 + 0x1F1E6; // Regional Indicator A
+            
+            const flag = String.fromCodePoint(firstCode, secondCode);
+            console.log(`Alternative flag for ${countryCode}: ${flag}`);
+            return flag;
+        } catch (error) {
+            console.error('Alternative flag method failed:', error);
+            return null;
+        }
+    }
+
+    updateSystemTime() {
+        const timeElement = document.getElementById('system-time');
+        const dateElement = document.getElementById('system-date');
+
+        if (timeElement && dateElement) {
+            const now = new Date();
+            const locale = this.currentLanguage === 'ar' ? 'ar-SA' : 'en-US';
+            
+            // Update time with leading zeros
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            const timeString = `${hours}:${minutes}:${seconds}`;
+            timeElement.textContent = timeString;
+
+            // Update date
+            const dateString = now.toLocaleDateString(locale, {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            });
+            dateElement.textContent = dateString;
+            
+            // Add subtle animation to time
+            timeElement.style.transform = 'scale(1.05)';
+            setTimeout(() => {
+                timeElement.style.transform = 'scale(1)';
+            }, 100);
+        }
+    }
+
+    async fetchWeatherInfo() {
+        if (!this.userLocation) {
+            console.log('No user location available for weather');
+            this.showDemoWeather();
+            return;
+        }
+
+        try {
+            const weatherIconElement = document.getElementById('weather-icon');
+            const weatherTempElement = document.getElementById('weather-temp');
+            const weatherDescElement = document.getElementById('weather-desc');
+            const weatherHumidityElement = document.getElementById('weather-humidity');
+            const weatherWindElement = document.getElementById('weather-wind');
+
+            if (!weatherIconElement || !weatherTempElement || !weatherDescElement || 
+                !weatherHumidityElement || !weatherWindElement) {
+                console.log('Weather elements not found');
+                return;
+            }
+
+            // Show loading state
+            weatherIconElement.textContent = '🌤️';
+            weatherTempElement.textContent = '--°C';
+            weatherDescElement.textContent = this.getText('Loading...', 'جاري التحميل...');
+            weatherHumidityElement.textContent = '--%';
+            weatherWindElement.textContent = '-- km/h';
+
+            console.log('Fetching weather for location:', this.userLocation);
+
+            // Try multiple weather services
+            let weatherData = null;
+
+            // First try: OpenMeteo (free, no API key required)
+            try {
+                const response = await fetch(
+                    `https://api.open-meteo.com/v1/forecast?latitude=${this.userLocation.lat}&longitude=${this.userLocation.lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,wind_speed_10m&timezone=auto`,
+                    {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json',
+                        },
+                        timeout: 10000
+                    }
+                );
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Weather data from OpenMeteo:', data);
+                    
+                    if (data.current) {
+                        weatherData = {
+                            temp: data.current.temperature_2m,
+                            humidity: data.current.relative_humidity_2m,
+                            windSpeed: data.current.wind_speed_10m,
+                            weatherCode: data.current.weather_code,
+                            description: this.getWeatherDescription(data.current.weather_code)
+                        };
+                    }
+                }
+            } catch (error) {
+                console.log('OpenMeteo failed, trying alternative...');
+            }
+
+            // Second try: wttr.in (fallback)
+            if (!weatherData) {
+                try {
+                    const response = await fetch(
+                        `https://wttr.in/${this.userLocation.lat},${this.userLocation.lon}?format=j1`,
+                        {
+                            method: 'GET',
+                            timeout: 10000
+                        }
+                    );
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log('Weather data from wttr.in:', data);
+                        
+                        if (data.current_condition && data.current_condition[0]) {
+                            const current = data.current_condition[0];
+                            weatherData = {
+                                temp: parseFloat(current.temp_C),
+                                humidity: parseInt(current.humidity),
+                                windSpeed: parseFloat(current.windspeedKmph),
+                                weatherCode: this.getWeatherCodeFromWttr(current.weatherDesc[0].value),
+                                description: current.weatherDesc[0].value
+                            };
+                        }
+                    }
+                } catch (error) {
+                    console.log('wttr.in also failed');
+                }
+            }
+
+            if (weatherData) {
+                // Update weather information
+                weatherTempElement.textContent = `${Math.round(weatherData.temp)}°C`;
+                weatherDescElement.textContent = weatherData.description;
+                weatherHumidityElement.textContent = `${weatherData.humidity}%`;
+                weatherWindElement.textContent = `${Math.round(weatherData.windSpeed)} km/h`;
+                
+                // Update weather icon
+                weatherIconElement.textContent = this.getWeatherIcon(weatherData.weatherCode);
+                
+                console.log('Weather updated successfully:', weatherData);
+            } else {
+                throw new Error('All weather services failed');
+            }
+
+        } catch (error) {
+            console.error('Error fetching weather information:', error);
+            this.showDemoWeather();
+        }
+    }
+
+    showDemoWeather() {
+        const weatherIconElement = document.getElementById('weather-icon');
+        const weatherTempElement = document.getElementById('weather-temp');
+        const weatherDescElement = document.getElementById('weather-desc');
+        const weatherHumidityElement = document.getElementById('weather-humidity');
+        const weatherWindElement = document.getElementById('weather-wind');
+
+        if (weatherIconElement && weatherTempElement && weatherDescElement && 
+            weatherHumidityElement && weatherWindElement) {
+            
+            // Show demo weather data with random values
+            const demoData = [
+                { temp: 22, desc: 'Partly Cloudy', humidity: 65, wind: 12, icon: '🌤️' },
+                { temp: 18, desc: 'Clear sky', humidity: 45, wind: 8, icon: '☀️' },
+                { temp: 25, desc: 'Sunny', humidity: 55, wind: 15, icon: '☀️' },
+                { temp: 15, desc: 'Cloudy', humidity: 75, wind: 20, icon: '☁️' },
+                { temp: 28, desc: 'Hot', humidity: 40, wind: 5, icon: '🔥' }
+            ];
+            
+            const randomWeather = demoData[Math.floor(Math.random() * demoData.length)];
+            
+            weatherIconElement.textContent = randomWeather.icon;
+            weatherTempElement.textContent = `${randomWeather.temp}°C`;
+            weatherDescElement.textContent = this.getText(randomWeather.desc, this.getArabicWeather(randomWeather.desc));
+            weatherHumidityElement.textContent = `${randomWeather.humidity}%`;
+            weatherWindElement.textContent = `${randomWeather.wind} km/h`;
+            
+            console.log('Demo weather shown:', randomWeather);
+        }
+    }
+
+    getArabicWeather(englishDesc) {
+        const translations = {
+            'Partly Cloudy': 'غائم جزئياً',
+            'Clear sky': 'سماء صافية',
+            'Sunny': 'مشمس',
+            'Cloudy': 'غائم',
+            'Hot': 'حار'
+        };
+        return translations[englishDesc] || englishDesc;
+    }
+
+    getWeatherIcon(code) {
+        // Map weather codes to emoji icons (OpenMeteo format)
+        if (code === 0) return '☀️'; // Clear sky
+        if (code >= 1 && code <= 3) return '🌤️'; // Partly cloudy
+        if (code >= 45 && code <= 48) return '🌫️'; // Foggy
+        if (code >= 51 && code <= 55) return '🌧️'; // Drizzle
+        if (code >= 56 && code <= 57) return '🌨️'; // Freezing drizzle
+        if (code >= 61 && code <= 65) return '🌧️'; // Rain
+        if (code >= 66 && code <= 67) return '🌨️'; // Freezing rain
+        if (code >= 71 && code <= 75) return '❄️'; // Snow
+        if (code >= 77 && code <= 77) return '❄️'; // Snow grains
+        if (code >= 80 && code <= 82) return '🌧️'; // Rain showers
+        if (code >= 85 && code <= 86) return '🌨️'; // Snow showers
+        if (code >= 95 && code <= 95) return '⛈️'; // Thunderstorm
+        if (code >= 96 && code <= 99) return '⛈️'; // Thunderstorm with hail
+        return '🌤️'; // Default
+    }
+
+    getWeatherDescription(code) {
+        // Map weather codes to descriptions
+        if (code === 0) return this.getText('Clear sky', 'سماء صافية');
+        if (code >= 1 && code <= 3) return this.getText('Partly cloudy', 'غائم جزئياً');
+        if (code >= 45 && code <= 48) return this.getText('Foggy', 'ضبابي');
+        if (code >= 51 && code <= 55) return this.getText('Drizzle', 'رذاذ خفيف');
+        if (code >= 56 && code <= 57) return this.getText('Freezing drizzle', 'رذاذ متجمد');
+        if (code >= 61 && code <= 65) return this.getText('Rain', 'ممطر');
+        if (code >= 66 && code <= 67) return this.getText('Freezing rain', 'مطر متجمد');
+        if (code >= 71 && code <= 75) return this.getText('Snow', 'ثلجي');
+        if (code >= 77 && code <= 77) return this.getText('Snow grains', 'حبيبات ثلج');
+        if (code >= 80 && code <= 82) return this.getText('Rain showers', 'أمطار متفرقة');
+        if (code >= 85 && code <= 86) return this.getText('Snow showers', 'ثلوج متفرقة');
+        if (code >= 95 && code <= 95) return this.getText('Thunderstorm', 'عاصفة رعدية');
+        if (code >= 96 && code <= 99) return this.getText('Thunderstorm with hail', 'عاصفة رعدية مع برد');
+        return this.getText('Partly cloudy', 'غائم جزئياً');
+    }
+
+    getWeatherCodeFromWttr(description) {
+        // Convert wttr.in descriptions to weather codes
+        const desc = description.toLowerCase();
+        if (desc.includes('clear') || desc.includes('sunny')) return 0;
+        if (desc.includes('partly cloudy') || desc.includes('cloudy')) return 2;
+        if (desc.includes('overcast')) return 3;
+        if (desc.includes('fog') || desc.includes('mist')) return 45;
+        if (desc.includes('drizzle')) return 51;
+        if (desc.includes('rain')) return 61;
+        if (desc.includes('snow')) return 71;
+        if (desc.includes('thunder') || desc.includes('storm')) return 95;
+        return 2; // Default to partly cloudy
+    }
+
+    initSystemInfo() {
+        console.log('Initializing system information...');
+        
+        // Initialize system time immediately
+        this.updateSystemTime();
+        
+        // Update system time every second
+        const timeInterval = setInterval(() => {
+            this.updateSystemTime();
+        }, 1000);
+        
+        // Initialize IP information with delay to ensure DOM is ready
+        setTimeout(() => {
+            this.fetchIPInfo();
+        }, 1000);
+        
+        // Refresh IP and weather info every 30 minutes
+        const refreshInterval = setInterval(() => {
+            console.log('Refreshing system information...');
+            this.fetchIPInfo();
+        }, 30 * 60 * 1000);
+        
+        // Store intervals for cleanup if needed
+        this.systemIntervals = {
+            time: timeInterval,
+            refresh: refreshInterval
+        };
     }
 }
 
