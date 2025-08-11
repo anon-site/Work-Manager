@@ -107,7 +107,13 @@ class WorkManagerApp {
             debts: [],
             settings: {
                 hourlyRate: 10.00,
-                currency: 'EUR'
+                currency: 'EUR',
+                rateMode: 'hourly',
+                monthlySalary: 0,
+                workHoursPerDay: 8,
+                workDaysPerWeek: 5,
+                weeksPerMonth: 4.33,
+                companyName: ''
             }
         };
         this.loadingManager = new LoadingManager();
@@ -156,6 +162,35 @@ class WorkManagerApp {
     loadSettingsToForms() {
         // Load salary settings
         if (this.data.settings) {
+            // General -> company name
+            const companyInput = document.getElementById('company-name');
+            if (companyInput && typeof this.data.settings.companyName === 'string') {
+                companyInput.value = this.data.settings.companyName;
+            }
+            // Rate mode
+            const rateModeSelect = document.getElementById('rate-mode');
+            if (rateModeSelect && this.data.settings.rateMode) {
+                rateModeSelect.value = this.data.settings.rateMode;
+            }
+
+            // Monthly settings
+            const monthlySalaryInput = document.getElementById('monthly-salary');
+            const hoursPerDayInput = document.getElementById('work-hours-per-day');
+            const daysPerWeekInput = document.getElementById('work-days-per-week');
+            const weeksPerMonthInput = document.getElementById('weeks-per-month');
+            if (monthlySalaryInput && this.data.settings.monthlySalary != null) {
+                monthlySalaryInput.value = this.data.settings.monthlySalary;
+            }
+            if (hoursPerDayInput && this.data.settings.workHoursPerDay != null) {
+                hoursPerDayInput.value = this.data.settings.workHoursPerDay;
+            }
+            if (daysPerWeekInput && this.data.settings.workDaysPerWeek != null) {
+                daysPerWeekInput.value = this.data.settings.workDaysPerWeek;
+            }
+            if (weeksPerMonthInput && this.data.settings.weeksPerMonth != null) {
+                weeksPerMonthInput.value = this.data.settings.weeksPerMonth;
+            }
+
             // Set hourly rate
             const hourlyRateInput = document.getElementById('default-hourly-rate');
             if (hourlyRateInput && this.data.settings.hourlyRate) {
@@ -236,10 +271,39 @@ class WorkManagerApp {
         });
 
         // Settings forms
+        const generalForm = document.getElementById('general-settings-form');
+        if (generalForm) {
+            generalForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.saveGeneralSettings();
+            });
+        }
         document.getElementById('salary-settings-form').addEventListener('submit', (e) => {
             e.preventDefault();
             this.saveSalarySettings();
         });
+
+        // Dynamic UI for rate mode
+        const rateModeSelect = document.getElementById('rate-mode');
+        const monthlyGroup = document.getElementById('monthly-settings-group');
+        const monthlyGroup2 = document.getElementById('monthly-settings-group-2');
+        const calculatedGroup = document.getElementById('calculated-rates-group');
+        const hourlyInput = document.getElementById('default-hourly-rate');
+        const toggleMonthlyGroups = () => {
+            const useMonthly = rateModeSelect.value === 'monthly';
+            monthlyGroup?.classList.toggle('hidden', !useMonthly);
+            monthlyGroup2?.classList.toggle('hidden', !useMonthly);
+            calculatedGroup?.classList.toggle('hidden', !useMonthly);
+            hourlyInput.parentElement?.classList.toggle('hidden', useMonthly);
+            if (useMonthly) this.calculateRatesFromMonthly();
+        };
+        rateModeSelect?.addEventListener('change', toggleMonthlyGroups);
+        // Initial state
+        toggleMonthlyGroups();
+
+        // Recalculate on inputs
+        ['monthly-salary','work-hours-per-day','work-days-per-week','weeks-per-month']
+            .forEach(id => document.getElementById(id)?.addEventListener('input', () => this.calculateRatesFromMonthly()));
 
         document.getElementById('appearance-settings-form').addEventListener('submit', (e) => {
             e.preventDefault();
@@ -250,6 +314,12 @@ class WorkManagerApp {
         document.getElementById('export-data').addEventListener('click', () => {
             this.exportData();
         });
+
+        // Export PDF
+        const exportPdfBtn = document.getElementById('export-pdf');
+        if (exportPdfBtn) {
+            exportPdfBtn.addEventListener('click', () => this.exportPDF());
+        }
 
         document.getElementById('import-data').addEventListener('click', () => {
             document.getElementById('import-file-input').click();
@@ -298,6 +368,13 @@ class WorkManagerApp {
                 menuToggle.classList.remove('active');
             }
         });
+    }
+
+    saveGeneralSettings() {
+        const name = document.getElementById('company-name')?.value || '';
+        this.data.settings.companyName = name.trim();
+        this.saveData();
+        this.showSuccessMessage(this.getText('General settings saved!', 'تم حفظ الإعدادات العامة!'));
     }
 
     navigateToSection(sectionId) {
@@ -364,7 +441,7 @@ class WorkManagerApp {
             startTime: formData.get('start-time'),
             endTime: formData.get('end-time'),
             totalHours: parseFloat(formData.get('total-hours')),
-            hourlyRate: this.data.settings?.hourlyRate || 10.00,
+            hourlyRate: this.getEffectiveHourlyRate(),
             totalSalary: parseFloat(formData.get('total-salary-calc')),
             notes: formData.get('work-notes'),
             createdAt: new Date().toISOString()
@@ -384,7 +461,7 @@ class WorkManagerApp {
     calculateWorkHours() {
         const startTime = document.getElementById('start-time').value;
         const endTime = document.getElementById('end-time').value;
-        const hourlyRate = this.data.settings?.hourlyRate || 10.00;
+        const hourlyRate = this.getEffectiveHourlyRate();
 
         if (startTime && endTime) {
             const start = new Date(`2000-01-01T${startTime}`);
@@ -400,6 +477,34 @@ class WorkManagerApp {
             document.getElementById('total-hours').value = diffHours.toFixed(2);
             document.getElementById('total-salary-calc').value = (diffHours * hourlyRate).toFixed(2);
         }
+    }
+
+    getEffectiveHourlyRate() {
+        const s = this.data.settings || {};
+        if (s.rateMode === 'monthly') {
+            // hours per month = weeksPerMonth * workDaysPerWeek * workHoursPerDay
+            const hoursPerMonth = (Number(s.weeksPerMonth) || 4.33) * (Number(s.workDaysPerWeek) || 5) * (Number(s.workHoursPerDay) || 8);
+            if (hoursPerMonth > 0) return (Number(s.monthlySalary) || 0) / hoursPerMonth;
+        }
+        return Number(s.hourlyRate) || 10.0;
+    }
+
+    calculateRatesFromMonthly() {
+        const monthly = Number(document.getElementById('monthly-salary')?.value || 0);
+        const hoursPerDay = Number(document.getElementById('work-hours-per-day')?.value || 8);
+        const daysPerWeek = Number(document.getElementById('work-days-per-week')?.value || 5);
+        const weeksPerMonth = Number(document.getElementById('weeks-per-month')?.value || 4.33);
+
+        const weeklyRate = monthly / (weeksPerMonth || 4.33);
+        const dailyRate = weeklyRate / (daysPerWeek || 5);
+        const hourlyRate = dailyRate / (hoursPerDay || 8);
+
+        const weeklyEl = document.getElementById('calculated-weekly-rate');
+        const dailyEl = document.getElementById('calculated-daily-rate');
+        const hourlyEl = document.getElementById('calculated-hourly-rate');
+        if (weeklyEl) weeklyEl.value = isFinite(weeklyRate) ? weeklyRate.toFixed(2) : '0.00';
+        if (dailyEl) dailyEl.value = isFinite(dailyRate) ? dailyRate.toFixed(2) : '0.00';
+        if (hourlyEl) hourlyEl.value = isFinite(hourlyRate) ? hourlyRate.toFixed(2) : '0.00';
     }
 
     // Expense Management
@@ -699,15 +804,32 @@ class WorkManagerApp {
 
     // Settings Management
     saveSalarySettings() {
-        const hourlyRate = parseFloat(document.getElementById('default-hourly-rate').value);
         const currency = document.getElementById('currency').value;
-        
-        this.data.settings.hourlyRate = hourlyRate;
+        const rateMode = document.getElementById('rate-mode')?.value || 'hourly';
         this.data.settings.currency = currency;
-        
+        this.data.settings.rateMode = rateMode;
 
-        
+        if (rateMode === 'monthly') {
+            const monthly = Number(document.getElementById('monthly-salary')?.value || 0);
+            const hoursPerDay = Number(document.getElementById('work-hours-per-day')?.value || 8);
+            const daysPerWeek = Number(document.getElementById('work-days-per-week')?.value || 5);
+            const weeksPerMonth = Number(document.getElementById('weeks-per-month')?.value || 4.33);
+            this.data.settings.monthlySalary = monthly;
+            this.data.settings.workHoursPerDay = hoursPerDay;
+            this.data.settings.workDaysPerWeek = daysPerWeek;
+            this.data.settings.weeksPerMonth = weeksPerMonth;
+
+            // Also store derived hourly rate for persistence and immediate use
+            this.calculateRatesFromMonthly();
+            const effectiveHourly = Number(document.getElementById('calculated-hourly-rate')?.value || '0');
+            this.data.settings.hourlyRate = effectiveHourly;
+        } else {
+            const hourlyRate = Number(document.getElementById('default-hourly-rate').value || 10);
+            this.data.settings.hourlyRate = hourlyRate;
+        }
+
         this.saveData();
+        this.updateDashboard();
         this.showSuccessMessage(this.getText('Salary settings saved!', 'تم حفظ إعدادات الراتب!'));
     }
 
@@ -812,6 +934,285 @@ class WorkManagerApp {
         
         URL.revokeObjectURL(url);
         this.showSuccessMessage(this.getText('Data exported successfully!', 'تم تصدير البيانات بنجاح!'));
+    }
+
+    // Export to PDF (summary + tables)
+    exportPDF() {
+        try {
+            const currencySymbol = (this.data.settings?.currency === 'USD') ? '$'
+                : (this.data.settings?.currency === 'GBP') ? '£'
+                : '€';
+
+            // Build container
+            const container = document.createElement('div');
+            container.style.fontFamily = "Inter, Cairo, sans-serif";
+            container.style.padding = '24px';
+            container.style.maxWidth = '1000px';
+            container.style.color = '#111827';
+            container.style.backgroundColor = '#ffffff';
+
+            // Header
+            const header = document.createElement('div');
+            header.style.display = 'flex';
+            header.style.alignItems = 'center';
+            header.style.justifyContent = 'space-between';
+            header.style.gap = '12px';
+            const titleCol = document.createElement('div');
+            titleCol.style.display = 'flex';
+            titleCol.style.flexDirection = 'column';
+            const h1 = document.createElement('h1');
+            h1.textContent = this.getText('Work Manager Report', 'تقرير مدير العمل');
+            h1.style.margin = '0 0 6px 0';
+            h1.style.fontSize = '20px';
+            const sub = document.createElement('p');
+            sub.textContent = `${this.getText('Generated on', 'تاريخ الإنشاء')}: ${new Date().toLocaleString(this.currentLanguage === 'ar' ? 'ar-SA' : 'en-US')}`;
+            sub.style.margin = '0';
+            sub.style.color = '#6b7280';
+            sub.style.fontSize = '12px';
+            titleCol.appendChild(h1);
+            titleCol.appendChild(sub);
+            // Optional company badge
+            const company = (this.data.settings?.companyName || '').trim();
+            if (company) {
+                const badge = document.createElement('div');
+                badge.textContent = company;
+                badge.style.padding = '8px 12px';
+                badge.style.border = '1px solid #e5e7eb';
+                badge.style.borderRadius = '10px';
+                badge.style.background = 'linear-gradient(135deg, #eff6ff, #ecfeff)';
+                badge.style.color = '#111827';
+                badge.style.fontWeight = '700';
+                badge.style.fontSize = '12px';
+                badge.style.boxShadow = '0 1px 2px rgba(0,0,0,0.04)';
+                header.appendChild(badge);
+            }
+            header.appendChild(titleCol);
+            container.appendChild(header);
+
+            // Summary
+            const stats = this.calculateStats();
+            const summary = document.createElement('div');
+            summary.style.display = 'grid';
+            summary.style.gridTemplateColumns = 'repeat(3, 1fr)';
+            summary.style.gap = '10px';
+            summary.style.margin = '14px 0 18px 0';
+            const summaryItems = [
+                { en: 'Work Hours', ar: 'ساعات العمل', v: stats.workHours.toFixed(2) },
+                { en: 'Total Salary', ar: 'إجمالي الراتب', v: `${currencySymbol}${stats.totalSalary.toFixed(2)}` },
+                { en: 'Withdrawn', ar: 'المسحوب', v: `${currencySymbol}${stats.withdrawnAmount.toFixed(2)}` },
+                { en: 'Expenses', ar: 'المصاريف', v: `${currencySymbol}${stats.totalExpenses.toFixed(2)}` },
+                { en: 'Debts', ar: 'الديون', v: `${currencySymbol}${stats.totalDebts.toFixed(2)}` },
+                { en: 'Remaining', ar: 'الرصيد المتبقي', v: `${currencySymbol}${stats.remainingBalance.toFixed(2)}` }
+            ];
+            summaryItems.forEach(it => {
+                const card = document.createElement('div');
+                card.style.border = '1px solid #e5e7eb';
+                card.style.borderRadius = '8px';
+                card.style.padding = '10px 12px';
+                const l = document.createElement('div');
+                l.textContent = this.getText(it.en, it.ar);
+                l.style.fontSize = '11px';
+                l.style.color = '#6b7280';
+                const v = document.createElement('div');
+                v.textContent = it.v;
+                v.style.fontWeight = '700';
+                v.style.fontSize = '14px';
+                card.appendChild(l);
+                card.appendChild(v);
+                summary.appendChild(card);
+            });
+            container.appendChild(summary);
+
+            const addSectionTitle = (text) => {
+                const t = document.createElement('h2');
+                t.textContent = text;
+                t.style.fontSize = '16px';
+                t.style.margin = '14px 0 8px 0';
+                container.appendChild(t);
+            };
+
+            const buildTable = (columns, rows) => {
+                const table = document.createElement('table');
+                table.style.width = '100%';
+                table.style.borderCollapse = 'collapse';
+                table.style.marginBottom = '12px';
+                const thead = document.createElement('thead');
+                const trh = document.createElement('tr');
+                columns.forEach(c => {
+                    const th = document.createElement('th');
+                    th.textContent = c;
+                    th.style.textAlign = 'left';
+                    th.style.fontSize = '11px';
+                    th.style.color = '#374151';
+                    th.style.borderBottom = '1px solid #e5e7eb';
+                    th.style.padding = '8px 6px';
+                    trh.appendChild(th);
+                });
+                thead.appendChild(trh);
+                const tbody = document.createElement('tbody');
+                rows.forEach(r => {
+                    const tr = document.createElement('tr');
+                    r.forEach((cell) => {
+                        const td = document.createElement('td');
+                        td.textContent = cell;
+                        td.style.fontSize = '11px';
+                        td.style.color = '#111827';
+                        td.style.padding = '8px 6px';
+                        td.style.borderBottom = '1px solid #f3f4f6';
+                        tr.appendChild(td);
+                    });
+                    tbody.appendChild(tr);
+                });
+                table.appendChild(thead);
+                table.appendChild(tbody);
+                container.appendChild(table);
+            };
+
+            // Work + Withdrawals
+            addSectionTitle(this.getText('Work + Withdrawals', 'العمل + السحوبات'));
+            const workColumns = [
+                this.getText('Date', 'التاريخ'),
+                this.getText('Start', 'البداية'),
+                this.getText('End', 'النهاية'),
+                this.getText('Hours', 'الساعات'),
+                this.getText('Rate', 'المعدل'),
+                this.getText('Salary', 'الراتب')
+            ];
+            const workRows = this.data.workEntries.map(w => [
+                this.formatDate(w.date),
+                w.startTime,
+                w.endTime,
+                (w.totalHours ?? 0).toFixed(2),
+                `${currencySymbol}${(w.hourlyRate ?? 0).toFixed(2)}`,
+                `${currencySymbol}${(w.totalSalary ?? 0).toFixed(2)}`
+            ]);
+            if (workRows.length) {
+                buildTable(workColumns, workRows);
+            } else {
+                const p = document.createElement('p');
+                p.textContent = this.getText('No work entries found.', 'لا توجد إدخالات عمل.');
+                p.style.color = '#6b7280';
+                p.style.fontSize = '12px';
+                container.appendChild(p);
+            }
+
+            const withdrawals = this.data.expenses.filter(e => e.category === 'withdrawal');
+            const wdTitle = document.createElement('h3');
+            wdTitle.textContent = this.getText('Withdrawals', 'السحوبات');
+            wdTitle.style.fontSize = '14px';
+            wdTitle.style.margin = '10px 0 6px 0';
+            container.appendChild(wdTitle);
+            const wdColumns = [
+                this.getText('Date', 'التاريخ'),
+                this.getText('Description', 'الوصف'),
+                this.getText('Amount', 'المبلغ')
+            ];
+            const wdRows = withdrawals.map(e => [
+                this.formatDate(e.date),
+                e.description,
+                `${currencySymbol}${(e.amount ?? 0).toFixed(2)}`
+            ]);
+            if (wdRows.length) {
+                buildTable(wdColumns, wdRows);
+            } else {
+                const p = document.createElement('p');
+                p.textContent = this.getText('No withdrawals found.', 'لا توجد سحوبات.');
+                p.style.color = '#6b7280';
+                p.style.fontSize = '12px';
+                container.appendChild(p);
+            }
+
+            // Expenses (excluding withdrawals)
+            addSectionTitle(this.getText('Expenses', 'المصاريف'));
+            const nonWithdrawals = this.data.expenses.filter(e => e.category !== 'withdrawal');
+            const expColumns = [
+                this.getText('Date', 'التاريخ'),
+                this.getText('Category', 'الفئة'),
+                this.getText('Description', 'الوصف'),
+                this.getText('Amount', 'المبلغ')
+            ];
+            const expRows = nonWithdrawals.map(e => [
+                this.formatDate(e.date),
+                this.getCategoryText(e.category),
+                e.description,
+                `${currencySymbol}${(e.amount ?? 0).toFixed(2)}`
+            ]);
+            if (expRows.length) {
+                buildTable(expColumns, expRows);
+            } else {
+                const p = document.createElement('p');
+                p.textContent = this.getText('No expenses found.', 'لا توجد مصاريف.');
+                p.style.color = '#6b7280';
+                p.style.fontSize = '12px';
+                container.appendChild(p);
+            }
+
+            // Debts
+            addSectionTitle(this.getText('Debts', 'الديون'));
+            const debtColumns = [
+                this.getText('Date', 'التاريخ'),
+                this.getText('Type', 'النوع'),
+                this.getText('Description', 'الوصف'),
+                this.getText('Amount', 'المبلغ'),
+                this.getText('Status', 'الحالة'),
+                this.getText('Due Date', 'تاريخ الاستحقاق')
+            ];
+            const debtRows = this.data.debts.map(d => [
+                this.formatDate(d.date),
+                this.getDebtTypeText(d.type),
+                d.description,
+                `${currencySymbol}${(d.amount ?? 0).toFixed(2)}`,
+                this.getStatusText(d.status),
+                d.dueDate ? this.formatDate(d.dueDate) : '-'
+            ]);
+            if (debtRows.length) {
+                buildTable(debtColumns, debtRows);
+            } else {
+                const p = document.createElement('p');
+                p.textContent = this.getText('No debts found.', 'لا توجد ديون.');
+                p.style.color = '#6b7280';
+                p.style.fontSize = '12px';
+                container.appendChild(p);
+            }
+
+            // Place offscreen for proper render size
+            const wrapper = document.createElement('div');
+            wrapper.style.position = 'absolute';
+            wrapper.style.left = '-9999px';
+            wrapper.style.top = '0';
+            wrapper.style.backgroundColor = '#ffffff';
+            container.setAttribute('dir', document.documentElement.getAttribute('dir') || (this.currentLanguage === 'ar' ? 'rtl' : 'ltr'));
+            wrapper.appendChild(container);
+            document.body.appendChild(wrapper);
+            void wrapper.offsetHeight;
+
+            const opt = {
+                margin:       [10, 10, 10, 10],
+                filename:     `work-manager-report-${new Date().toISOString().split('T')[0]}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#ffffff', windowWidth: wrapper.scrollWidth },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak:    { mode: ['css', 'legacy'] }
+            };
+
+            if (typeof html2pdf !== 'undefined') {
+                setTimeout(() => {
+                    html2pdf().set(opt).from(wrapper).save().then(() => {
+                        wrapper.remove();
+                        this.showSuccessMessage(this.getText('PDF exported successfully!', 'تم تصدير ملف PDF بنجاح!'));
+                    }).catch(() => {
+                        wrapper.remove();
+                        this.showErrorMessage(this.getText('Failed to export PDF', 'فشل تصدير PDF'));
+                    });
+                }, 200);
+            } else {
+                wrapper.remove();
+                this.showErrorMessage(this.getText('PDF library not loaded', 'لم يتم تحميل مكتبة PDF'));
+            }
+        } catch (err) {
+            console.error(err);
+            this.showErrorMessage(this.getText('Failed to export PDF', 'فشل تصدير PDF'));
+        }
     }
 
     importData(event) {
@@ -1051,7 +1452,7 @@ class WorkManagerApp {
         const calculateEditHours = () => {
             const startTime = startTimeInput.value;
             const endTime = endTimeInput.value;
-            const hourlyRate = this.data.settings?.hourlyRate || 10.00;
+            const hourlyRate = this.getEffectiveHourlyRate();
 
             if (startTime && endTime) {
                 const start = new Date(`2000-01-01T${startTime}`);
@@ -1081,7 +1482,7 @@ class WorkManagerApp {
             workEntry.startTime = formData.get('start-time');
             workEntry.endTime = formData.get('end-time');
             workEntry.totalHours = parseFloat(formData.get('total-hours'));
-            workEntry.hourlyRate = this.data.settings?.hourlyRate || 10.00;
+            workEntry.hourlyRate = this.getEffectiveHourlyRate();
             workEntry.totalSalary = parseFloat(formData.get('total-salary'));
             workEntry.notes = formData.get('work-notes');
 

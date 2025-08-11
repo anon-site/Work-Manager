@@ -600,8 +600,72 @@
             
             <div class="settings-container">
                 <div class="settings-section">
+                    <h2 data-en="General" data-ar="عام">General</h2>
+                    <form id="general-settings-form" class="modern-form">
+                        <div class="form-row">
+                            <div class="form-group full-width">
+                                <label for="company-name" data-en="Company Name" data-ar="اسم الشركة">Company Name</label>
+                                <input type="text" id="company-name" placeholder="Acme Inc.">
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i>
+                                <span data-en="Save" data-ar="حفظ">Save</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div class="settings-section">
                     <h2 data-en="Salary Settings" data-ar="إعدادات الراتب">Salary Settings</h2>
                     <form id="salary-settings-form" class="modern-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="rate-mode" data-en="Rate Mode" data-ar="وضع الحساب">Rate Mode</label>
+                                <select id="rate-mode">
+                                    <option value="hourly" data-en="Set hourly rate manually" data-ar="تحديد معدل الساعة يدويًا">Set hourly rate manually</option>
+                                    <option value="monthly" data-en="Use monthly salary" data-ar="استخدام الراتب الشهري">Use monthly salary</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row hidden" id="monthly-settings-group">
+                            <div class="form-group">
+                                <label for="monthly-salary" data-en="Monthly Salary (€)" data-ar="الراتب الشهري (€)">Monthly Salary (€)</label>
+                                <input type="number" id="monthly-salary" step="0.01" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="work-hours-per-day" data-en="Work Hours per Day" data-ar="ساعات العمل في اليوم">Work Hours per Day</label>
+                                <input type="number" id="work-hours-per-day" step="0.1" value="8">
+                            </div>
+                        </div>
+
+                        <div class="form-row hidden" id="monthly-settings-group-2">
+                            <div class="form-group">
+                                <label for="work-days-per-week" data-en="Work Days per Week" data-ar="أيام العمل في الأسبوع">Work Days per Week</label>
+                                <input type="number" id="work-days-per-week" step="0.1" value="5">
+                            </div>
+                            <div class="form-group">
+                                <label for="weeks-per-month" data-en="Weeks per Month" data-ar="عدد الأسابيع في الشهر">Weeks per Month</label>
+                                <input type="number" id="weeks-per-month" step="0.01" value="4.33">
+                            </div>
+                        </div>
+
+                        <div class="form-row hidden" id="calculated-rates-group">
+                            <div class="form-group">
+                                <label for="calculated-weekly-rate" data-en="Calculated Weekly Rate (€)" data-ar="المعدل الأسبوعي المحسوب (€)">Calculated Weekly Rate (€)</label>
+                                <input type="number" id="calculated-weekly-rate" step="0.01" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="calculated-daily-rate" data-en="Calculated Daily Rate (€)" data-ar="المعدل اليومي المحسوب (€)">Calculated Daily Rate (€)</label>
+                                <input type="number" id="calculated-daily-rate" step="0.01" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="calculated-hourly-rate" data-en="Calculated Hourly Rate (€)" data-ar="معدل الساعة المحسوب (€)">Calculated Hourly Rate (€)</label>
+                                <input type="number" id="calculated-hourly-rate" step="0.01" readonly>
+                            </div>
+                        </div>
+
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="default-hourly-rate" data-en="Default Hourly Rate (€)" data-ar="معدل الساعة الافتراضي (€)">Default Hourly Rate (€)</label>
@@ -672,6 +736,10 @@
                             <i class="fas fa-download"></i>
                             <span data-en="Export Data" data-ar="تصدير البيانات">Export Data</span>
                         </button>
+                        <button class="btn btn-secondary" id="export-pdf">
+                            <i class="fas fa-file-pdf"></i>
+                            <span data-en="Export PDF" data-ar="تصدير PDF">Export PDF</span>
+                        </button>
                         <button class="btn btn-secondary" id="import-data">
                             <i class="fas fa-upload"></i>
                             <span data-en="Import Data" data-ar="استيراد البيانات">Import Data</span>
@@ -708,7 +776,8 @@
 
     <!-- Hidden file input for import -->
     <input type="file" id="import-file-input" accept=".json" style="display: none;">
-
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
