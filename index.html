@@ -128,14 +128,7 @@
                 <p data-en="Overview of your work and financial status" data-ar="نظرة عامة على عملك وحالتك المالية">Overview of your work and financial status</p>
             </div>
             
-            <!-- Clock and Date Display -->
-            <div class="clock-date-container">
-                <div class="clock-display">
-                    <div class="time" id="current-time">00:00:00</div>
-                    <div class="date" id="current-date">January 1, 2024</div>
-                    <div class="day" id="current-day">Monday</div>
-                </div>
-            </div>
+
             
             <div class="dashboard-grid">
                 <div class="stat-card">
@@ -213,6 +206,54 @@
                 <h2 data-en="Recent Activity" data-ar="النشاط الأخير">Recent Activity</h2>
                 <div class="activity-list" id="recent-activity-list">
                     <!-- Activity items will be populated by JavaScript -->
+                </div>
+            </div>
+            
+            <!-- System Information Panel -->
+            <div class="system-info-panel">
+                <div class="info-grid">
+                    <div class="info-card">
+                        <div class="info-icon">
+                            <i class="fas fa-globe"></i>
+                        </div>
+                        <div class="info-content">
+                            <h4 data-en="IP Address" data-ar="عنوان IP">IP Address</h4>
+                            <p class="info-value" id="ip-address">Loading...</p>
+                        </div>
+                    </div>
+                    
+                    <div class="info-card">
+                        <div class="info-icon">
+                            <i class="fas fa-flag"></i>
+                        </div>
+                        <div class="info-content">
+                            <h4 data-en="Country" data-ar="البلد">Country</h4>
+                            <div class="country-display" id="country-info">
+                                <img class="country-flag" id="country-flag" src="" alt="Country Flag" style="display: none;">
+                                <span class="country-name" id="country-name">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="info-card">
+                        <div class="info-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="info-content">
+                            <h4 data-en="Local Time" data-ar="التوقيت المحلي">Local Time</h4>
+                            <p class="info-value" id="local-time">Loading...</p>
+                        </div>
+                    </div>
+                    
+                    <div class="info-card">
+                        <div class="info-icon">
+                            <i class="fas fa-cloud-sun"></i>
+                        </div>
+                        <div class="info-content">
+                            <h4 data-en="Weather" data-ar="الطقس">Weather</h4>
+                            <p class="info-value" id="weather-info">Loading...</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
