@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Work Management System</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loading-screen">
+        <div class="loading-container">
+            <div class="loading-logo">
+                <div class="logo-icon">
+                    <i class="fas fa-briefcase"></i>
+                </div>
+                <h2 class="logo-text" data-en="Work Manager" data-ar="مدير العمل">Work Manager</h2>
+                <p class="logo-subtitle" data-en="Professional Work Management System" data-ar="نظام إدارة العمل الاحترافي">Professional Work Management System</p>
+            </div>
+            
+            <div class="loading-animation">
+                <div class="loading-spinner">
+                    <div class="spinner-ring"></div>
+                    <div class="spinner-ring"></div>
+                    <div class="spinner-ring"></div>
+                </div>
+                <div class="loading-text">
+                    <span data-en="Loading..." data-ar="جاري التحميل...">Loading...</span>
+                    <div class="loading-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="loading-progress">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div class="progress-text" id="progress-text">0%</div>
+            </div>
+            
+            <div class="loading-features">
+                <div class="feature-item">
+                    <i class="fas fa-chart-line"></i>
+                    <span data-en="Smart Analytics" data-ar="تحليلات ذكية">Smart Analytics</span>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-shield-alt"></i>
+                    <span data-en="Secure Data" data-ar="بيانات آمنة">Secure Data</span>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-mobile-alt"></i>
+                    <span data-en="Responsive Design" data-ar="تصميم متجاوب">Responsive Design</span>
+                </div>
+            </div>
+            
+            <div class="loading-footer">
+                <p data-en="Version 2.0" data-ar="الإصدار 2.0">Version 2.0</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <i class="fas fa-briefcase"></i>
+                <span class="brand-text" data-en="Work Manager" data-ar="مدير العمل">Work Manager</span>
+            </div>
+            
+            <div class="nav-menu" id="nav-menu">
+                <div class="nav-item">
+                    <a href="#dashboard" class="nav-link active" data-en="Dashboard" data-ar="لوحة التحكم">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="#work-entry" class="nav-link" data-en="Work Entry" data-ar="إدخال العمل">
+                        <i class="fas fa-clock"></i>
+                        <span>Work Entry</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="#expenses" class="nav-link" data-en="Expenses" data-ar="المصاريف">
+                        <i class="fas fa-receipt"></i>
+                        <span>Expenses</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="#debts" class="nav-link" data-en="Debts" data-ar="الديون">
+                        <i class="fas fa-credit-card"></i>
+                        <span>Debts</span>
+                    </a>
+                </div>
+                <div class="nav-item">
+                    <a href="#settings" class="nav-link" data-en="Settings" data-ar="الإعدادات">
+                        <i class="fas fa-cog"></i>
+                        <span>Settings</span>
+                    </a>
+                </div>
+            </div>
+            
+            <div class="nav-controls">
+                <button class="language-toggle" id="language-toggle">
+                    <i class="fas fa-globe"></i>
+                    <span data-en="العربية" data-ar="English">العربية</span>
+                </button>
+                <button class="menu-toggle" id="menu-toggle">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Dashboard Section -->
+        <section id="dashboard" class="content-section active">
+            <div class="section-header">
+                <h1 data-en="Dashboard" data-ar="لوحة التحكم">Dashboard</h1>
+                <p data-en="Overview of your work and financial status" data-ar="نظرة عامة على عملك وحالتك المالية">Overview of your work and financial status</p>
+            </div>
+            
+            <!-- Clock and Date Display -->
+            <div class="clock-date-container">
+                <div class="clock-display">
+                    <div class="time" id="current-time">00:00:00</div>
+                    <div class="date" id="current-date">January 1, 2024</div>
+                    <div class="day" id="current-day">Monday</div>
+                </div>
+            </div>
+            
+            <div class="dashboard-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-calendar-day"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 data-en="Work Days" data-ar="أيام العمل">Work Days</h3>
+                        <p class="stat-value" id="work-days">0</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 data-en="Work Hours" data-ar="ساعات العمل">Work Hours</h3>
+                        <p class="stat-value" id="work-hours">0</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-euro-sign"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 data-en="Total Salary" data-ar="الراتب الإجمالي">Total Salary</h3>
+                        <p class="stat-value" id="total-salary">€0</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-hand-holding-usd"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 data-en="Withdrawn" data-ar="المسحوب">Withdrawn</h3>
+                        <p class="stat-value" id="withdrawn-amount">€0</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-receipt"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 data-en="Expenses" data-ar="المصاريف">Expenses</h3>
+                        <p class="stat-value" id="total-expenses">€0</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-credit-card"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 data-en="Debts" data-ar="الديون">Debts</h3>
+                        <p class="stat-value" id="total-debts">€0</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card highlight">
+                    <div class="stat-icon">
+                        <i class="fas fa-wallet"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3 data-en="Remaining Balance" data-ar="الرصيد المتبقي">Remaining Balance</h3>
+                        <p class="stat-value" id="remaining-balance">€0</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="recent-activity">
+                <h2 data-en="Recent Activity" data-ar="النشاط الأخير">Recent Activity</h2>
+                <div class="activity-list" id="recent-activity-list">
+                    <!-- Activity items will be populated by JavaScript -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Work Entry Section -->
+        <section id="work-entry" class="content-section">
+            <div class="section-header">
+                <h1 data-en="Work Entry" data-ar="إدخال العمل">Work Entry</h1>
+                <p data-en="Add your work hours and details" data-ar="أضف ساعات عملك والتفاصيل">Add your work hours and details</p>
+            </div>
+            
+            <div class="form-container">
+                <form id="work-entry-form" class="modern-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="work-date" data-en="Date" data-ar="التاريخ">Date</label>
+                            <input type="date" id="work-date" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="start-time" data-en="Start Time" data-ar="وقت البداية">Start Time</label>
+                            <input type="time" id="start-time" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="end-time" data-en="End Time" data-ar="وقت النهاية">End Time</label>
+                            <input type="time" id="end-time" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="total-hours" data-en="Total Hours" data-ar="مجموع الساعات">Total Hours</label>
+                            <input type="number" id="total-hours" step="0.01" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label for="total-salary-calc" data-en="Total Salary (€)" data-ar="الراتب الإجمالي (€)">Total Salary (€)</label>
+                            <input type="number" id="total-salary-calc" step="0.01" readonly>
+                        </div>
+                    </div>
+                    
+
+                    
+                    <div class="form-row">
+                        <div class="form-group full-width">
+                            <label for="work-notes" data-en="Notes" data-ar="ملاحظات">Notes</label>
+                            <textarea id="work-notes" rows="3" placeholder="Add any notes about your work day..."></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i>
+                            <span data-en="Save Work Entry" data-ar="حفظ إدخال العمل">Save Work Entry</span>
+                        </button>
+                        <button type="reset" class="btn btn-secondary">
+                            <i class="fas fa-undo"></i>
+                            <span data-en="Reset" data-ar="إعادة تعيين">Reset</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="work-history">
+                <h2 data-en="Work History" data-ar="تاريخ العمل">Work History</h2>
+                <div class="table-container">
+                    <table class="modern-table" id="work-history-table">
+                        <thead>
+                            <tr>
+                                <th data-en="Date" data-ar="التاريخ">Date</th>
+                                <th data-en="Start" data-ar="البداية">Start</th>
+                                <th data-en="End" data-ar="النهاية">End</th>
+                                <th data-en="Hours" data-ar="الساعات">Hours</th>
+                                <th data-en="Rate" data-ar="المعدل">Rate</th>
+                                <th data-en="Salary" data-ar="الراتب">Salary</th>
+                                <th data-en="Actions" data-ar="الإجراءات">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="work-history-body">
+                            <!-- Work entries will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Expenses Section -->
+        <section id="expenses" class="content-section">
+            <div class="section-header">
+                <h1 data-en="Expenses" data-ar="المصاريف">Expenses</h1>
+                <p data-en="Track your expenses and withdrawals" data-ar="تتبع مصاريفك وسحوباتك">Track your expenses and withdrawals</p>
+            </div>
+            
+            <div class="form-container">
+                <form id="expense-form" class="modern-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="expense-date" data-en="Date" data-ar="التاريخ">Date</label>
+                            <input type="date" id="expense-date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="expense-amount" data-en="Amount (€)" data-ar="المبلغ (€)">Amount (€)</label>
+                            <input type="number" id="expense-amount" step="0.01" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="expense-category" data-en="Category" data-ar="الفئة">Category</label>
+                            <select id="expense-category" required>
+                                <option value="" data-en="Select Category" data-ar="اختر الفئة">Select Category</option>
+                                <option value="food" data-en="Food" data-ar="طعام">Food</option>
+                                <option value="transport" data-en="Transport" data-ar="مواصلات">Transport</option>
+                                <option value="bills" data-en="Bills" data-ar="فواتير">Bills</option>
+                                <option value="entertainment" data-en="Entertainment" data-ar="ترفيه">Entertainment</option>
+                                <option value="shopping" data-en="Shopping" data-ar="تسوق">Shopping</option>
+                                <option value="withdrawal" data-en="Withdrawal" data-ar="سحب">Withdrawal</option>
+                                <option value="other" data-en="Other" data-ar="أخرى">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="expense-description" data-en="Description" data-ar="الوصف">Description</label>
+                            <input type="text" id="expense-description" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-plus"></i>
+                            <span data-en="Add Expense" data-ar="إضافة مصروف">Add Expense</span>
+                        </button>
+                        <button type="reset" class="btn btn-secondary">
+                            <i class="fas fa-undo"></i>
+                            <span data-en="Reset" data-ar="إعادة تعيين">Reset</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="expenses-summary">
+                <div class="summary-cards">
+                    <div class="summary-card">
+                        <h3 data-en="Total Expenses" data-ar="إجمالي المصاريف">Total Expenses</h3>
+                        <p id="total-expenses-summary">€0</p>
+                    </div>
+                    <div class="summary-card">
+                        <h3 data-en="This Month" data-ar="هذا الشهر">This Month</h3>
+                        <p id="monthly-expenses">€0</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="expenses-history">
+                <h2 data-en="Expenses History" data-ar="تاريخ المصاريف">Expenses History</h2>
+                <div class="table-container">
+                    <table class="modern-table" id="expenses-table">
+                        <thead>
+                            <tr>
+                                <th data-en="Date" data-ar="التاريخ">Date</th>
+                                <th data-en="Category" data-ar="الفئة">Category</th>
+                                <th data-en="Description" data-ar="الوصف">Description</th>
+                                <th data-en="Amount" data-ar="المبلغ">Amount</th>
+                                <th data-en="Actions" data-ar="الإجراءات">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="expenses-body">
+                            <!-- Expenses will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Debts Section -->
+        <section id="debts" class="content-section">
+            <div class="section-header">
+                <h1 data-en="Debts" data-ar="الديون">Debts</h1>
+                <p data-en="Manage your debts and loans" data-ar="إدارة ديونك وقروضك">Manage your debts and loans</p>
+            </div>
+            
+            <div class="form-container">
+                <form id="debt-form" class="modern-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="debt-date" data-en="Date" data-ar="التاريخ">Date</label>
+                            <input type="date" id="debt-date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="debt-amount" data-en="Amount (€)" data-ar="المبلغ (€)">Amount (€)</label>
+                            <input type="number" id="debt-amount" step="0.01" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="debt-type" data-en="Type" data-ar="النوع">Type</label>
+                            <select id="debt-type" required>
+                                <option value="" data-en="Select Type" data-ar="اختر النوع">Select Type</option>
+                                <option value="loan" data-en="Loan" data-ar="قرض">Loan</option>
+                                <option value="credit" data-en="Credit Card" data-ar="بطاقة ائتمان">Credit Card</option>
+                                <option value="personal" data-en="Personal Debt" data-ar="دين شخصي">Personal Debt</option>
+                                <option value="other" data-en="Other" data-ar="أخرى">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="debt-description" data-en="Description" data-ar="الوصف">Description</label>
+                            <input type="text" id="debt-description" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="debt-status" data-en="Status" data-ar="الحالة">Status</label>
+                            <select id="debt-status" required>
+                                <option value="pending" data-en="Not Done" data-ar="لم يتم">Not Done</option>
+                                <option value="completed" data-en="Done" data-ar="تم">Done</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="debt-due-date" data-en="Due Date" data-ar="تاريخ الاستحقاق">Due Date</label>
+                            <input type="date" id="debt-due-date">
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-plus"></i>
+                            <span data-en="Add Debt" data-ar="إضافة دين">Add Debt</span>
+                        </button>
+                        <button type="reset" class="btn btn-secondary">
+                            <i class="fas fa-undo"></i>
+                            <span data-en="Reset" data-ar="إعادة تعيين">Reset</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="debts-summary">
+                <div class="summary-cards">
+                    <div class="summary-card">
+                        <h3 data-en="Total Debts" data-ar="إجمالي الديون">Total Debts</h3>
+                        <p id="total-debts-summary">€0</p>
+                    </div>
+                    <div class="summary-card">
+                        <h3 data-en="Pending Debts" data-ar="الديون المعلقة">Pending Debts</h3>
+                        <p id="active-debts">€0</p>
+                    </div>
+                    <div class="summary-card">
+                        <h3 data-en="Completed Debts" data-ar="الديون المكتملة">Completed Debts</h3>
+                        <p id="paid-debts">€0</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="debts-history">
+                <h2 data-en="Debts History" data-ar="تاريخ الديون">Debts History</h2>
+                <div class="table-container">
+                    <table class="modern-table" id="debts-table">
+                        <thead>
+                            <tr>
+                                <th data-en="Date" data-ar="التاريخ">Date</th>
+                                <th data-en="Type" data-ar="النوع">Type</th>
+                                <th data-en="Description" data-ar="الوصف">Description</th>
+                                <th data-en="Amount" data-ar="المبلغ">Amount</th>
+                                <th data-en="Status" data-ar="الحالة">Status</th>
+                                <th data-en="Due Date" data-ar="تاريخ الاستحقاق">Due Date</th>
+                                <th data-en="Actions" data-ar="الإجراءات">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="debts-body">
+                            <!-- Debts will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- Edit Modal -->
+        <div class="modal-container" id="edit-modal">
+            <div class="modal-overlay" onclick="app.closeModal()"></div>
+            <div class="modal">
+                <div class="modal-header">
+                    <h3 id="edit-modal-title" data-en="Edit Item" data-ar="تعديل العنصر">Edit Item</h3>
+                    <button class="modal-close" onclick="app.closeModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="edit-form" class="modern-form">
+                        <!-- Form fields will be dynamically populated -->
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Section -->
+        <section id="settings" class="content-section">
+            <div class="section-header">
+                <h1 data-en="Settings" data-ar="الإعدادات">Settings</h1>
+                <p data-en="Customize your application preferences" data-ar="تخصيص تفضيلات التطبيق">Customize your application preferences</p>
+            </div>
+            
+            <div class="settings-container">
+                <div class="settings-section">
+                    <h2 data-en="Salary Settings" data-ar="إعدادات الراتب">Salary Settings</h2>
+                    <form id="salary-settings-form" class="modern-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="default-hourly-rate" data-en="Default Hourly Rate (€)" data-ar="معدل الساعة الافتراضي (€)">Default Hourly Rate (€)</label>
+                                <input type="number" id="default-hourly-rate" step="0.01" value="10.00">
+                            </div>
+                            <div class="form-group">
+                                <label for="currency" data-en="Currency" data-ar="العملة">Currency</label>
+                                <select id="currency">
+                                    <option value="EUR">EUR (€)</option>
+                                    <option value="USD">USD ($)</option>
+                                    <option value="GBP">GBP (£)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i>
+                                <span data-en="Save Settings" data-ar="حفظ الإعدادات">Save Settings</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="settings-section">
+                    <h2 data-en="Appearance" data-ar="المظهر">Appearance</h2>
+                    <form id="appearance-settings-form" class="modern-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="theme" data-en="Theme" data-ar="المظهر">Theme</label>
+                                <select id="theme">
+                                    <option value="light" data-en="Light" data-ar="فاتح">Light</option>
+                                    <option value="dark" data-en="Dark" data-ar="داكن">Dark</option>
+                                    <option value="auto" data-en="Auto" data-ar="تلقائي">Auto</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="primary-color" data-en="Primary Color" data-ar="اللون الأساسي">Primary Color</label>
+                                <input type="color" id="primary-color" value="#3b82f6">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="accent-color" data-en="Accent Color" data-ar="لون التمييز">Accent Color</label>
+                                <input type="color" id="accent-color" value="#10b981">
+                            </div>
+                            <div class="form-group">
+                                <label for="font-size" data-en="Font Size" data-ar="حجم الخط">Font Size</label>
+                                <select id="font-size">
+                                    <option value="small" data-en="Small" data-ar="صغير">Small</option>
+                                    <option value="medium" data-en="Medium" data-ar="متوسط" selected>Medium</option>
+                                    <option value="large" data-en="Large" data-ar="كبير">Large</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-palette"></i>
+                                <span data-en="Apply Theme" data-ar="تطبيق المظهر">Apply Theme</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="settings-section">
+                    <h2 data-en="Data Management" data-ar="إدارة البيانات">Data Management</h2>
+                    <div class="data-actions">
+                        <button class="btn btn-secondary" id="export-data">
+                            <i class="fas fa-download"></i>
+                            <span data-en="Export Data" data-ar="تصدير البيانات">Export Data</span>
+                        </button>
+                        <button class="btn btn-secondary" id="import-data">
+                            <i class="fas fa-upload"></i>
+                            <span data-en="Import Data" data-ar="استيراد البيانات">Import Data</span>
+                        </button>
+                        <button class="btn btn-warning" id="reset-settings">
+                            <i class="fas fa-undo-alt"></i>
+                            <span data-en="Reset Settings to Default" data-ar="إعادة تعيين الإعدادات للافتراضي">Reset Settings to Default</span>
+                        </button>
+                        <button class="btn btn-danger" id="clear-data">
+                            <i class="fas fa-trash"></i>
+                            <span data-en="Clear All Data" data-ar="مسح جميع البيانات">Clear All Data</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal Container -->
+    <div id="modal-container" class="modal-container">
+        <div class="modal-overlay" id="modal-overlay"></div>
+        <div class="modal" id="modal">
+            <div class="modal-header">
+                <h3 id="modal-title">Modal Title</h3>
+                <button class="modal-close" id="modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <!-- Modal content will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden file input for import -->
+    <input type="file" id="import-file-input" accept=".json" style="display: none;">
+
+    <script src="script.js"></script>
+</body>
+</html>
