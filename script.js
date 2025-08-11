@@ -1334,8 +1334,9 @@ class WorkManagerApp {
             const ipElement = document.getElementById('ip-address');
             const countryFlagElement = document.getElementById('country-flag');
             const countryNameElement = document.getElementById('country-name');
+            const cityNameElement = document.getElementById('city-name');
 
-            if (!ipElement || !countryFlagElement || !countryNameElement) {
+            if (!ipElement || !countryFlagElement || !countryNameElement || !cityNameElement) {
                 console.log('IP elements not found');
                 return;
             }
@@ -1343,6 +1344,7 @@ class WorkManagerApp {
             // Show loading state
             ipElement.textContent = this.getText('Loading...', 'جاري التحميل...');
             countryNameElement.textContent = this.getText('Loading...', 'جاري التحميل...');
+            cityNameElement.textContent = this.getText('Loading...', 'جاري التحميل...');
             countryFlagElement.textContent = '🏳️';
 
             // Try multiple IP services for better reliability
@@ -1417,8 +1419,9 @@ class WorkManagerApp {
                 // Update country information
                 let countryName = data.country_name || data.country;
                 let countryCode = data.country_code || data.country;
+                let cityName = data.city || data.region || data.regionName;
                 
-                console.log('Country info:', { countryName, countryCode });
+                console.log('Location info:', { countryName, countryCode, cityName });
                 
                 if (countryName && countryCode) {
                     countryNameElement.textContent = countryName;
@@ -1430,14 +1433,31 @@ class WorkManagerApp {
                     countryFlagElement.textContent = '🏳️';
                     console.log('No country info available, showing default');
                 }
+                
+                // Update city information
+                if (cityName) {
+                    cityNameElement.textContent = cityName;
+                    console.log('Updated city display:', cityName);
+                } else {
+                    cityNameElement.textContent = this.getText('Unknown', 'غير معروف');
+                    console.log('No city info available, showing default');
+                }
 
-                // Store location data for weather
+                // Store location data for weather and timezone
                 if (data.latitude && data.longitude) {
                     this.userLocation = {
                         lat: data.latitude,
                         lon: data.longitude,
-                        city: data.city || data.country_name
+                        city: data.city || data.country_name,
+                        countryCode: data.country_code || data.country,
+                        timezone: data.timezone || data.time_zone
                     };
+                    
+                    // If timezone is not available, try to get it from coordinates
+                    if (!this.userLocation.timezone) {
+                        this.userLocation.timezone = await this.getTimezoneFromCoordinates(data.latitude, data.longitude);
+                    }
+                    
                     console.log('Location data stored:', this.userLocation);
                     this.fetchWeatherInfo();
                 } else if (data.loc) {
@@ -1446,8 +1466,16 @@ class WorkManagerApp {
                     this.userLocation = {
                         lat: parseFloat(lat),
                         lon: parseFloat(lon),
-                        city: data.city || data.country
+                        city: data.city || data.country,
+                        countryCode: data.country,
+                        timezone: data.timezone
                     };
+                    
+                    // If timezone is not available, try to get it from coordinates
+                    if (!this.userLocation.timezone) {
+                        this.userLocation.timezone = await this.getTimezoneFromCoordinates(parseFloat(lat), parseFloat(lon));
+                    }
+                    
                     console.log('Location data from ipinfo.io stored:', this.userLocation);
                     this.fetchWeatherInfo();
                 }
@@ -1531,16 +1559,63 @@ class WorkManagerApp {
     updateSystemTime() {
         const timeElement = document.getElementById('system-time');
         const dateElement = document.getElementById('system-date');
+        const timezoneElement = document.getElementById('system-timezone');
 
         if (timeElement && dateElement) {
-            const now = new Date();
-            const locale = this.currentLanguage === 'ar' ? 'ar-SA' : 'en-US';
+            let now = new Date();
+            let locale = this.currentLanguage === 'ar' ? 'ar-SA' : 'en-US';
             
-            // Update time with leading zeros
-            const hours = String(now.getHours()).padStart(2, '0');
+            // If we have user location data, try to get local time for that location
+            if (this.userLocation && this.userLocation.timezone) {
+                try {
+                    // Get current time in user's timezone
+                    const userTimeString = new Date().toLocaleString("en-US", {
+                        timeZone: this.userLocation.timezone,
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: false
+                    });
+                    
+                    // Parse the time string to get individual components
+                    const [datePart, timePart] = userTimeString.split(', ');
+                    const [month, day, year] = datePart.split('/');
+                    const [hours, minutes, seconds] = timePart.split(':');
+                    
+                    // Create new date object with user's local time
+                    now = new Date(year, month - 1, day, hours, minutes, seconds);
+                    
+                    // Update locale based on user's country if available
+                    if (this.userLocation.countryCode) {
+                        const countryCode = this.userLocation.countryCode.toLowerCase();
+                        if (countryCode === 'sa' || countryCode === 'ae' || countryCode === 'eg' || 
+                            countryCode === 'jo' || countryCode === 'lb' || countryCode === 'sy' || 
+                            countryCode === 'iq' || countryCode === 'kw' || countryCode === 'qa' || 
+                            countryCode === 'bh' || countryCode === 'om' || countryCode === 'ye') {
+                            locale = 'ar-SA';
+                        }
+                    }
+                    
+                    console.log(`Using timezone: ${this.userLocation.timezone}, Local time: ${userTimeString}`);
+                } catch (error) {
+                    console.log('Error getting user timezone time, using local time:', error);
+                }
+            }
+            
+            // Update time with 12-hour format
+            let hours = now.getHours();
+            const isPM = hours >= 12;
+            const ampm = this.currentLanguage === 'ar' 
+                ? (isPM ? 'مساءً' : 'صباحاً') 
+                : (isPM ? 'PM' : 'AM');
+            hours = hours % 12;
+            hours = hours ? hours : 12; // Convert 0 to 12
             const minutes = String(now.getMinutes()).padStart(2, '0');
             const seconds = String(now.getSeconds()).padStart(2, '0');
-            const timeString = `${hours}:${minutes}:${seconds}`;
+            const timeString = `${hours}:${minutes}:${seconds} ${ampm}`;
             timeElement.textContent = timeString;
 
             // Update date
@@ -1550,6 +1625,15 @@ class WorkManagerApp {
                 day: 'numeric'
             });
             dateElement.textContent = dateString;
+            
+            // Update timezone display
+            if (timezoneElement) {
+                if (this.userLocation && this.userLocation.timezone) {
+                    timezoneElement.textContent = this.userLocation.timezone;
+                } else {
+                    timezoneElement.textContent = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                }
+            }
             
             // Add subtle animation to time
             timeElement.style.transform = 'scale(1.05)';
@@ -1572,9 +1656,10 @@ class WorkManagerApp {
             const weatherDescElement = document.getElementById('weather-desc');
             const weatherHumidityElement = document.getElementById('weather-humidity');
             const weatherWindElement = document.getElementById('weather-wind');
+            const weatherCityElement = document.getElementById('weather-city');
 
             if (!weatherIconElement || !weatherTempElement || !weatherDescElement || 
-                !weatherHumidityElement || !weatherWindElement) {
+                !weatherHumidityElement || !weatherWindElement || !weatherCityElement) {
                 console.log('Weather elements not found');
                 return;
             }
@@ -1585,6 +1670,7 @@ class WorkManagerApp {
             weatherDescElement.textContent = this.getText('Loading...', 'جاري التحميل...');
             weatherHumidityElement.textContent = '--%';
             weatherWindElement.textContent = '-- km/h';
+            weatherCityElement.textContent = this.getText('Loading...', 'جاري التحميل...');
 
             console.log('Fetching weather for location:', this.userLocation);
 
@@ -1660,6 +1746,13 @@ class WorkManagerApp {
                 weatherHumidityElement.textContent = `${weatherData.humidity}%`;
                 weatherWindElement.textContent = `${Math.round(weatherData.windSpeed)} km/h`;
                 
+                // Update weather city
+                if (this.userLocation && this.userLocation.city) {
+                    weatherCityElement.textContent = this.userLocation.city;
+                } else {
+                    weatherCityElement.textContent = this.getText('Unknown Location', 'موقع غير معروف');
+                }
+                
                 // Update weather icon
                 weatherIconElement.textContent = this.getWeatherIcon(weatherData.weatherCode);
                 
@@ -1680,9 +1773,10 @@ class WorkManagerApp {
         const weatherDescElement = document.getElementById('weather-desc');
         const weatherHumidityElement = document.getElementById('weather-humidity');
         const weatherWindElement = document.getElementById('weather-wind');
+        const weatherCityElement = document.getElementById('weather-city');
 
         if (weatherIconElement && weatherTempElement && weatherDescElement && 
-            weatherHumidityElement && weatherWindElement) {
+            weatherHumidityElement && weatherWindElement && weatherCityElement) {
             
             // Show demo weather data with random values
             const demoData = [
@@ -1700,6 +1794,13 @@ class WorkManagerApp {
             weatherDescElement.textContent = this.getText(randomWeather.desc, this.getArabicWeather(randomWeather.desc));
             weatherHumidityElement.textContent = `${randomWeather.humidity}%`;
             weatherWindElement.textContent = `${randomWeather.wind} km/h`;
+            
+            // Show demo city
+            if (this.userLocation && this.userLocation.city) {
+                weatherCityElement.textContent = this.userLocation.city;
+            } else {
+                weatherCityElement.textContent = this.getText('Demo City', 'مدينة تجريبية');
+            }
             
             console.log('Demo weather shown:', randomWeather);
         }
@@ -1764,6 +1865,34 @@ class WorkManagerApp {
         if (desc.includes('snow')) return 71;
         if (desc.includes('thunder') || desc.includes('storm')) return 95;
         return 2; // Default to partly cloudy
+    }
+
+    async getTimezoneFromCoordinates(lat, lon) {
+        try {
+            // Use timezone API to get timezone from coordinates
+            const response = await fetch(`https://api.timezonedb.com/v2.1/get-time-zone?key=YOUR_API_KEY&format=json&by=position&lat=${lat}&lng=${lon}`, {
+                method: 'GET',
+                timeout: 5000
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                return data.zoneName;
+            }
+        } catch (error) {
+            console.log('Error fetching timezone from coordinates:', error);
+        }
+        
+        // Fallback: estimate timezone based on longitude
+        const timezoneOffset = Math.round(lon / 15);
+        const timezoneNames = [
+            'UTC-12', 'UTC-11', 'UTC-10', 'UTC-9', 'UTC-8', 'UTC-7', 'UTC-6', 'UTC-5',
+            'UTC-4', 'UTC-3', 'UTC-2', 'UTC-1', 'UTC', 'UTC+1', 'UTC+2', 'UTC+3',
+            'UTC+4', 'UTC+5', 'UTC+6', 'UTC+7', 'UTC+8', 'UTC+9', 'UTC+10', 'UTC+11', 'UTC+12'
+        ];
+        
+        const index = timezoneOffset + 12; // Adjust for array index
+        return timezoneNames[index] || 'UTC';
     }
 
     initSystemInfo() {

@@ -1540,15 +1540,32 @@ p {
     font-weight: 600;
 }
 
+.city-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.city-name {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 0.875rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--bg-tertiary);
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+
 /* Time Card Specific Styles */
-.time-info, .date-info {
+.time-info, .date-info, .timezone-info {
     margin-bottom: 1rem;
 }
 
 .current-time {
     display: block;
     color: var(--primary-color);
-    font-size: 1.5rem;
+    font-size: 1.4rem;
     font-weight: 700;
     font-family: 'Courier New', monospace;
     text-align: center;
@@ -1557,6 +1574,12 @@ p {
     border-radius: 8px;
     border: 1px solid rgba(59, 130, 246, 0.2);
     transition: transform 0.1s ease;
+    letter-spacing: 1px;
+}
+
+[dir="rtl"] .current-time {
+    font-family: var(--font-family-arabic), 'Courier New', monospace;
+    font-size: 1.3rem;
 }
 
 .current-date {
@@ -1572,6 +1595,22 @@ p {
 }
 
 /* Weather Card Specific Styles */
+.weather-location {
+    text-align: center;
+    margin-bottom: 1rem;
+    padding: 0.75rem;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.weather-city {
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
 .weather-main {
     display: flex;
     align-items: center;
