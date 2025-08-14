@@ -396,6 +396,11 @@ class WorkManagerApp {
                 menuToggle.classList.remove('active');
             }
         });
+        // Cloud backup events
+        const cloudBackupBtn = document.getElementById('cloud-backup-btn');
+        const cloudRestoreBtn = document.getElementById('cloud-restore-btn');
+        if (cloudBackupBtn) cloudBackupBtn.addEventListener('click', () => this.backupToGist());
+        if (cloudRestoreBtn) cloudRestoreBtn.addEventListener('click', () => this.restoreFromGist());
     }
 
     // Authentication
@@ -1037,6 +1042,97 @@ class WorkManagerApp {
         
         URL.revokeObjectURL(url);
         this.showSuccessMessage(this.getText('Data exported successfully!', 'تم تصدير البيانات بنجاح!'));
+    }
+
+    // Simple client-side encryption (optional)
+    encryptData(plainText, passphrase) {
+        if (!passphrase) return plainText;
+        try {
+            const enc = new TextEncoder().encode(plainText);
+            const key = new TextEncoder().encode(passphrase.padEnd(32, '\u0000')).slice(0, 32);
+            // XOR fallback (not strong). For stronger security, replace with SubtleCrypto AES-GCM.
+            const out = enc.map((b, i) => b ^ key[i % key.length]);
+            return btoa(String.fromCharCode(...out));
+        } catch (_) { return plainText; }
+    }
+
+    decryptData(cipherText, passphrase) {
+        if (!passphrase) return cipherText;
+        try {
+            const bin = atob(cipherText);
+            const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+            const key = new TextEncoder().encode(passphrase.padEnd(32, '\u0000')).slice(0, 32);
+            const out = bytes.map((b, i) => b ^ key[i % key.length]);
+            return new TextDecoder().decode(out);
+        } catch (_) { return cipherText; }
+    }
+
+    async backupToGist() {
+        const token = document.getElementById('gist-token')?.value?.trim();
+        const gistId = document.getElementById('gist-id')?.value?.trim();
+        const filename = document.getElementById('gist-filename')?.value?.trim() || 'work-manager-backup.json';
+        const passphrase = document.getElementById('cloud-passphrase')?.value || '';
+        if (!token) {
+            this.showErrorMessage(this.getText('GitHub token is required', 'رمز GitHub مطلوب'));
+            return;
+        }
+
+        const payload = JSON.stringify(this.data);
+        const content = this.encryptData(payload, passphrase);
+
+        const body = gistId ?
+            { files: { [filename]: { content } } } :
+            { description: 'Work Manager backup', public: false, files: { [filename]: { content } } };
+
+        const endpoint = gistId ? `https://api.github.com/gists/${gistId}` : 'https://api.github.com/gists';
+        const method = gistId ? 'PATCH' : 'POST';
+
+        try {
+            const res = await fetch(endpoint, {
+                method,
+                headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github+json' },
+                body: JSON.stringify(body)
+            });
+            if (!res.ok) throw new Error('request_failed');
+            const data = await res.json();
+            if (!gistId) {
+                const newId = data.id;
+                const gistIdInput = document.getElementById('gist-id');
+                if (gistIdInput) gistIdInput.value = newId;
+            }
+            this.showSuccessMessage(this.getText('Cloud backup saved successfully!', 'تم حفظ النسخة السحابية بنجاح!'));
+        } catch (e) {
+            this.showErrorMessage(this.getText('Failed to save cloud backup', 'فشل حفظ النسخة السحابية'));
+        }
+    }
+
+    async restoreFromGist() {
+        const token = document.getElementById('gist-token')?.value?.trim();
+        const gistId = document.getElementById('gist-id')?.value?.trim();
+        const filename = document.getElementById('gist-filename')?.value?.trim() || 'work-manager-backup.json';
+        const passphrase = document.getElementById('cloud-passphrase')?.value || '';
+        if (!token || !gistId) {
+            this.showErrorMessage(this.getText('GitHub token and Gist ID are required', 'رمز GitHub ومعرّف Gist مطلوبان'));
+            return;
+        }
+        try {
+            const res = await fetch(`https://api.github.com/gists/${gistId}`, {
+                headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github+json' }
+            });
+            if (!res.ok) throw new Error('request_failed');
+            const gist = await res.json();
+            const file = gist.files?.[filename];
+            if (!file || !file.content) throw new Error('file_not_found');
+            const decrypted = this.decryptData(file.content, passphrase);
+            const importedData = JSON.parse(decrypted);
+            this.data = { ...this.data, ...importedData };
+            this.saveData();
+            this.updateDashboard();
+            this.updateAllTables();
+            this.showSuccessMessage(this.getText('Cloud backup loaded successfully!', 'تم تحميل النسخة السحابية بنجاح!'));
+        } catch (e) {
+            this.showErrorMessage(this.getText('Failed to load cloud backup', 'فشل تحميل النسخة السحابية'));
+        }
     }
 
     // Export to PDF (professional template)

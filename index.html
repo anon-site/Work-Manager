@@ -790,6 +790,45 @@
                         </button>
                     </div>
                 </div>
+
+                <div class="settings-section">
+                    <h2 data-en="Cloud Backup (GitHub Gist)" data-ar="نسخ سحابي (GitHub Gist)">Cloud Backup (GitHub Gist)</h2>
+                    <form id="cloud-settings-form" class="modern-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="gist-token" data-en="GitHub Token" data-ar="رمز GitHub">GitHub Token</label>
+                                <input type="password" id="gist-token" placeholder="ghp_...">
+                            </div>
+                            <div class="form-group">
+                                <label for="gist-id" data-en="Gist ID (optional)" data-ar="معرّف Gist (اختياري)">Gist ID (optional)</label>
+                                <input type="text" id="gist-id" placeholder="e.g., a1b2c3...">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="gist-filename" data-en="Filename" data-ar="اسم الملف">Filename</label>
+                                <input type="text" id="gist-filename" value="work-manager-backup.json">
+                            </div>
+                            <div class="form-group">
+                                <label for="cloud-passphrase" data-en="Encryption Passphrase (optional)" data-ar="كلمة مرور التشفير (اختياري)">Encryption Passphrase (optional)</label>
+                                <input type="password" id="cloud-passphrase" placeholder="••••••••">
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-primary" id="cloud-backup-btn">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <span data-en="Save to Cloud" data-ar="حفظ للسحابة">Save to Cloud</span>
+                            </button>
+                            <button type="button" class="btn btn-secondary" id="cloud-restore-btn">
+                                <i class="fas fa-cloud-download-alt"></i>
+                                <span data-en="Load from Cloud" data-ar="تحميل من السحابة">Load from Cloud</span>
+                            </button>
+                        </div>
+                    </form>
+                    <p class="mb-2" style="color: var(--text-secondary); font-size: 0.9rem;">
+                        <span data-en="Tip: create a Personal Access Token (gist scope) and keep it private. Optionally set a passphrase for client-side encryption." data-ar="نصيحة: أنشئ رمز وصول شخصي (صلاحية gist) واحتفظ به خاصًا. يمكنك استخدام كلمة مرور لتشفير البيانات محليًا.">Tip: create a Personal Access Token (gist scope) and keep it private. Optionally set a passphrase for client-side encryption.</span>
+                    </p>
+                </div>
             </div>
         </section>
     </main>
