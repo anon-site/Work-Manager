@@ -111,6 +111,10 @@
                     <i class="fas fa-globe"></i>
                     <span data-en="العربية" data-ar="English">العربية</span>
                 </button>
+                <button id="logout-button" class="logout-button" style="display:none">
+                    <i class="fas fa-right-from-bracket"></i>
+                    <span data-en="Logout" data-ar="تسجيل الخروج">Logout</span>
+                </button>
                 <button class="menu-toggle" id="menu-toggle">
                     <span></span>
                     <span></span>
@@ -613,6 +617,37 @@
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-save"></i>
                                 <span data-en="Save" data-ar="حفظ">Save</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+                <div class="settings-section">
+                    <h2 data-en="Account" data-ar="الحساب">Account</h2>
+                    <form id="account-settings-form" class="modern-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="account-username" data-en="Username" data-ar="اسم المستخدم">Username</label>
+                                <input type="text" id="account-username" placeholder="admin" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="account-current-password" data-en="Current Password" data-ar="كلمة المرور الحالية">Current Password</label>
+                                <input type="password" id="account-current-password" placeholder="••••••••" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="account-new-password" data-en="New Password (optional)" data-ar="كلمة مرور جديدة (اختياري)">New Password (optional)</label>
+                                <input type="password" id="account-new-password" placeholder="••••••••">
+                            </div>
+                            <div class="form-group">
+                                <label for="account-confirm-password" data-en="Confirm New Password" data-ar="تأكيد كلمة المرور الجديدة">Confirm New Password</label>
+                                <input type="password" id="account-confirm-password" placeholder="••••••••">
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-user-check"></i>
+                                <span data-en="Save Account" data-ar="حفظ الحساب">Save Account</span>
                             </button>
                         </div>
                     </form>

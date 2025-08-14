@@ -101,6 +101,7 @@ class WorkManagerApp {
     constructor() {
         this.currentLanguage = 'en';
         this.currentTheme = 'light';
+        this.authUser = null;
         this.data = {
             workEntries: [],
             expenses: [],
@@ -113,7 +114,11 @@ class WorkManagerApp {
                 workHoursPerDay: 8,
                 workDaysPerWeek: 5,
                 weeksPerMonth: 4.33,
-                companyName: ''
+                companyName: '',
+                account: {
+                    username: 'admin',
+                    password: 'admin'
+                }
             }
         };
         this.loadingManager = new LoadingManager();
@@ -121,6 +126,8 @@ class WorkManagerApp {
     }
 
     init() {
+        // Enforce auth before initializing the app
+        this.guardAuthentication();
         // Wait for loading to complete before initializing the app
         document.addEventListener('loadingComplete', () => {
             this.loadData();
@@ -225,6 +232,12 @@ class WorkManagerApp {
             if (fontSizeSelect && this.data.settings.fontSize) {
                 fontSizeSelect.value = this.data.settings.fontSize;
             }
+
+            // Account settings
+            const accountUsername = document.getElementById('account-username');
+            if (accountUsername && this.data.settings.account?.username) {
+                accountUsername.value = this.data.settings.account.username;
+            }
         }
     }
 
@@ -252,6 +265,12 @@ class WorkManagerApp {
             this.toggleLanguage();
         });
 
+        // Logout
+        const logoutBtn = document.getElementById('logout-button');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => this.logout());
+        }
+
         // Work entry form
         document.getElementById('work-entry-form').addEventListener('submit', (e) => {
             e.preventDefault();
@@ -276,6 +295,13 @@ class WorkManagerApp {
             generalForm.addEventListener('submit', (e) => {
                 e.preventDefault();
                 this.saveGeneralSettings();
+            });
+        }
+        const accountForm = document.getElementById('account-settings-form');
+        if (accountForm) {
+            accountForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.saveAccountSettings();
             });
         }
         document.getElementById('salary-settings-form').addEventListener('submit', (e) => {
@@ -368,6 +394,33 @@ class WorkManagerApp {
                 menuToggle.classList.remove('active');
             }
         });
+    }
+
+    // Authentication
+    guardAuthentication() {
+        try {
+            const item = localStorage.getItem('authUser');
+            this.authUser = item ? JSON.parse(item) : null;
+        } catch (_) {
+            this.authUser = null;
+        }
+
+        const onLoginPage = /login\.html$/i.test(location.pathname) || location.pathname.endsWith('/') && location.search.includes('login');
+        if (!this.authUser) {
+            // If not logged in, redirect to login unless already there
+            if (!onLoginPage) {
+                window.location.replace('login.html');
+            }
+        } else {
+            // Show logout button
+            const logoutBtn = document.getElementById('logout-button');
+            if (logoutBtn) logoutBtn.style.display = '';
+        }
+    }
+
+    logout() {
+        try { localStorage.removeItem('authUser'); } catch (_) {}
+        window.location.replace('login.html');
     }
 
     saveGeneralSettings() {
@@ -851,6 +904,54 @@ class WorkManagerApp {
         
         this.saveData();
         this.showSuccessMessage(this.getText('Appearance settings applied!', 'تم تطبيق إعدادات المظهر!'));
+    }
+
+    saveAccountSettings() {
+        const usernameInput = document.getElementById('account-username');
+        const currentPasswordInput = document.getElementById('account-current-password');
+        const newPasswordInput = document.getElementById('account-new-password');
+        const confirmPasswordInput = document.getElementById('account-confirm-password');
+
+        const currentSettings = this.data.settings?.account || { username: 'admin', password: 'admin' };
+
+        const newUsername = (usernameInput?.value || '').trim();
+        const currentPassword = currentPasswordInput?.value || '';
+        const newPassword = newPasswordInput?.value || '';
+        const confirmPassword = confirmPasswordInput?.value || '';
+
+        if (!newUsername) {
+            this.showErrorMessage(this.getText('Username is required', 'اسم المستخدم مطلوب'));
+            return;
+        }
+
+        if (!currentPassword || currentPassword !== currentSettings.password) {
+            this.showErrorMessage(this.getText('Current password is incorrect', 'كلمة المرور الحالية غير صحيحة'));
+            return;
+        }
+
+        if (newPassword || confirmPassword) {
+            if (newPassword.length < 4) {
+                this.showErrorMessage(this.getText('New password must be at least 4 characters', 'كلمة المرور الجديدة يجب أن تكون 4 أحرف على الأقل'));
+                return;
+            }
+            if (newPassword !== confirmPassword) {
+                this.showErrorMessage(this.getText('New passwords do not match', 'كلمتا المرور الجديدتان غير متطابقتين'));
+                return;
+            }
+        }
+
+        this.data.settings.account = {
+            username: newUsername,
+            password: newPassword ? newPassword : currentSettings.password
+        };
+
+        this.saveData();
+        this.showSuccessMessage(this.getText('Account updated successfully!', 'تم تحديث الحساب بنجاح!'));
+
+        // Clear sensitive inputs
+        if (currentPasswordInput) currentPasswordInput.value = '';
+        if (newPasswordInput) newPasswordInput.value = '';
+        if (confirmPasswordInput) confirmPasswordInput.value = '';
     }
 
     resetSettingsToDefault() {
