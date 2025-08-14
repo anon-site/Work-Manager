@@ -101,6 +101,8 @@ class WorkManagerApp {
     constructor() {
         this.currentLanguage = 'en';
         this.currentTheme = 'light';
+        this.lastFocusedElement = null;
+        this.modalKeydownHandler = null;
         this.authUser = null;
         this.data = {
             workEntries: [],
@@ -1037,129 +1039,187 @@ class WorkManagerApp {
         this.showSuccessMessage(this.getText('Data exported successfully!', 'تم تصدير البيانات بنجاح!'));
     }
 
-    // Export to PDF (summary + tables)
+    // Export to PDF (professional template)
     exportPDF() {
         try {
             const currencySymbol = (this.data.settings?.currency === 'USD') ? '$'
                 : (this.data.settings?.currency === 'GBP') ? '£'
                 : '€';
+            const locale = this.currentLanguage === 'ar' ? 'ar-SA' : 'en-US';
+            const dir = document.documentElement.getAttribute('dir') || (this.currentLanguage === 'ar' ? 'rtl' : 'ltr');
+            const primary = getComputedStyle(document.documentElement).getPropertyValue('--primary-color')?.trim() || '#3b82f6';
+            const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent-color')?.trim() || '#10b981';
 
-            // Build container
+            const stats = this.calculateStats();
+
             const container = document.createElement('div');
-            container.style.fontFamily = "Inter, Cairo, sans-serif";
+            container.style.fontFamily = 'Inter, Cairo, sans-serif';
             container.style.padding = '24px';
             container.style.maxWidth = '1000px';
-            container.style.color = '#111827';
-            container.style.backgroundColor = '#ffffff';
+            container.style.background = '#ffffff';
+            container.style.color = '#0f172a';
 
-            // Header
             const header = document.createElement('div');
             header.style.display = 'flex';
             header.style.alignItems = 'center';
             header.style.justifyContent = 'space-between';
-            header.style.gap = '12px';
-            const titleCol = document.createElement('div');
-            titleCol.style.display = 'flex';
-            titleCol.style.flexDirection = 'column';
-            const h1 = document.createElement('h1');
+            header.style.gap = '16px';
+            header.style.padding = '16px';
+            header.style.border = '1px solid #e5e7eb';
+            header.style.borderRadius = '12px';
+            header.style.background = `linear-gradient(135deg, ${primary}15, ${accent}10)`;
+
+            const brand = document.createElement('div');
+            brand.style.display = 'flex';
+            brand.style.alignItems = 'center';
+            brand.style.gap = '12px';
+            const logo = document.createElement('div');
+            logo.style.width = '42px';
+            logo.style.height = '42px';
+            logo.style.borderRadius = '12px';
+            logo.style.display = 'flex';
+            logo.style.alignItems = 'center';
+            logo.style.justifyContent = 'center';
+            logo.style.color = '#fff';
+            logo.style.background = `linear-gradient(135deg, ${primary}, ${accent})`;
+            logo.style.boxShadow = '0 8px 20px rgba(0,0,0,0.08)';
+            // Prefer company initials if provided
+            const companyName = (this.data.settings?.companyName || '').trim();
+            logo.textContent = (companyName ? companyName.split(' ').map(p=>p[0]).slice(0,2).join('').toUpperCase() : 'WM');
+
+            const titleBox = document.createElement('div');
+            const h1 = document.createElement('div');
             h1.textContent = this.getText('Work Manager Report', 'تقرير مدير العمل');
-            h1.style.margin = '0 0 6px 0';
-            h1.style.fontSize = '20px';
-            const sub = document.createElement('p');
-            sub.textContent = `${this.getText('Generated on', 'تاريخ الإنشاء')}: ${new Date().toLocaleString(this.currentLanguage === 'ar' ? 'ar-SA' : 'en-US')}`;
-            sub.style.margin = '0';
-            sub.style.color = '#6b7280';
+            h1.style.fontSize = '18px';
+            h1.style.fontWeight = '800';
+            h1.style.margin = '0';
+            const sub = document.createElement('div');
+            sub.textContent = `${this.getText('Generated on', 'تاريخ الإنشاء')}: ${new Date().toLocaleString(locale)}`;
+            sub.style.color = '#64748b';
             sub.style.fontSize = '12px';
-            titleCol.appendChild(h1);
-            titleCol.appendChild(sub);
-            // Optional company badge
+            sub.style.marginTop = '2px';
+            titleBox.appendChild(h1);
+            titleBox.appendChild(sub);
+
+            brand.appendChild(logo);
+            brand.appendChild(titleBox);
+
+            const badgeBox = document.createElement('div');
+            badgeBox.style.display = 'flex';
+            badgeBox.style.flexDirection = 'column';
+            badgeBox.style.alignItems = dir === 'rtl' ? 'flex-start' : 'flex-end';
+            badgeBox.style.gap = '6px';
             const company = (this.data.settings?.companyName || '').trim();
             if (company) {
-                const badge = document.createElement('div');
-                badge.textContent = company;
-                badge.style.padding = '8px 12px';
-                badge.style.border = '1px solid #e5e7eb';
-                badge.style.borderRadius = '10px';
-                badge.style.background = 'linear-gradient(135deg, #eff6ff, #ecfeff)';
-                badge.style.color = '#111827';
-                badge.style.fontWeight = '700';
-                badge.style.fontSize = '12px';
-                badge.style.boxShadow = '0 1px 2px rgba(0,0,0,0.04)';
-                header.appendChild(badge);
+                const companyBadge = document.createElement('div');
+                companyBadge.textContent = company;
+                companyBadge.style.padding = '6px 10px';
+                companyBadge.style.border = '1px solid #e2e8f0';
+                companyBadge.style.borderRadius = '9999px';
+                companyBadge.style.fontWeight = '700';
+                companyBadge.style.fontSize = '12px';
+                companyBadge.style.background = '#f8fafc';
+                badgeBox.appendChild(companyBadge);
             }
-            header.appendChild(titleCol);
+            const periodBadge = document.createElement('div');
+            periodBadge.textContent = this.getText('Overview', 'نظرة عامة');
+            periodBadge.style.padding = '6px 10px';
+            periodBadge.style.border = '1px solid #e2e8f0';
+            periodBadge.style.borderRadius = '9999px';
+            periodBadge.style.fontWeight = '700';
+            periodBadge.style.fontSize = '12px';
+            periodBadge.style.background = '#f8fafc';
+            badgeBox.appendChild(periodBadge);
+
+            header.appendChild(brand);
+            header.appendChild(badgeBox);
             container.appendChild(header);
 
-            // Summary
-            const stats = this.calculateStats();
-            const summary = document.createElement('div');
-            summary.style.display = 'grid';
-            summary.style.gridTemplateColumns = 'repeat(3, 1fr)';
-            summary.style.gap = '10px';
-            summary.style.margin = '14px 0 18px 0';
-            const summaryItems = [
-                { en: 'Work Hours', ar: 'ساعات العمل', v: stats.workHours.toFixed(2) },
-                { en: 'Total Salary', ar: 'إجمالي الراتب', v: `${currencySymbol}${stats.totalSalary.toFixed(2)}` },
-                { en: 'Withdrawn', ar: 'المسحوب', v: `${currencySymbol}${stats.withdrawnAmount.toFixed(2)}` },
-                { en: 'Expenses', ar: 'المصاريف', v: `${currencySymbol}${stats.totalExpenses.toFixed(2)}` },
-                { en: 'Debts', ar: 'الديون', v: `${currencySymbol}${stats.totalDebts.toFixed(2)}` },
-                { en: 'Remaining', ar: 'الرصيد المتبقي', v: `${currencySymbol}${stats.remainingBalance.toFixed(2)}` }
-            ];
-            summaryItems.forEach(it => {
+            const kpis = document.createElement('div');
+            kpis.style.display = 'grid';
+            kpis.style.gridTemplateColumns = 'repeat(3, 1fr)';
+            kpis.style.gap = '12px';
+            kpis.style.margin = '14px 0 18px 0';
+
+            const makeKPI = (labelEn, labelAr, value, color) => {
                 const card = document.createElement('div');
                 card.style.border = '1px solid #e5e7eb';
-                card.style.borderRadius = '8px';
-                card.style.padding = '10px 12px';
-                const l = document.createElement('div');
-                l.textContent = this.getText(it.en, it.ar);
-                l.style.fontSize = '11px';
-                l.style.color = '#6b7280';
-                const v = document.createElement('div');
-                v.textContent = it.v;
-                v.style.fontWeight = '700';
-                v.style.fontSize = '14px';
-                card.appendChild(l);
-                card.appendChild(v);
-                summary.appendChild(card);
-            });
-            container.appendChild(summary);
+                card.style.borderRadius = '12px';
+                card.style.padding = '12px';
+                card.style.background = '#ffffff';
+                const label = document.createElement('div');
+                label.textContent = this.getText(labelEn, labelAr);
+                label.style.fontSize = '11px';
+                label.style.color = '#64748b';
+                const val = document.createElement('div');
+                val.textContent = value;
+                val.style.fontWeight = '800';
+                val.style.fontSize = '18px';
+                val.style.color = color;
+                val.style.marginTop = '4px';
+                card.appendChild(label);
+                card.appendChild(val);
+                return card;
+            };
 
-            const addSectionTitle = (text) => {
-                const t = document.createElement('h2');
+            kpis.appendChild(makeKPI('Work Hours', 'ساعات العمل', stats.workHours.toFixed(2), primary));
+            kpis.appendChild(makeKPI('Total Salary', 'إجمالي الراتب', `${currencySymbol}${stats.totalSalary.toFixed(2)}`, primary));
+            kpis.appendChild(makeKPI('Withdrawn', 'المسحوب', `${currencySymbol}${stats.withdrawnAmount.toFixed(2)}`, accent));
+            kpis.appendChild(makeKPI('Expenses', 'المصاريف', `${currencySymbol}${stats.totalExpenses.toFixed(2)}`, '#ef4444'));
+            kpis.appendChild(makeKPI('Debts', 'الديون', `${currencySymbol}${stats.totalDebts.toFixed(2)}`, '#f59e0b'));
+            kpis.appendChild(makeKPI('Remaining', 'الرصيد المتبقي', `${currencySymbol}${stats.remainingBalance.toFixed(2)}`, '#16a34a'));
+            container.appendChild(kpis);
+
+            const sectionTitle = (text) => {
+                const wrap = document.createElement('div');
+                wrap.style.display = 'flex';
+                wrap.style.alignItems = 'center';
+                wrap.style.gap = '8px';
+                wrap.style.margin = '16px 0 8px 0';
+                const bar = document.createElement('div');
+                bar.style.width = '10px';
+                bar.style.height = '22px';
+                bar.style.borderRadius = '6px';
+                bar.style.background = `linear-gradient(180deg, ${primary}, ${accent})`;
+                const t = document.createElement('div');
                 t.textContent = text;
-                t.style.fontSize = '16px';
-                t.style.margin = '14px 0 8px 0';
-                container.appendChild(t);
+                t.style.fontWeight = '800';
+                t.style.fontSize = '14px';
+                wrap.appendChild(bar);
+                wrap.appendChild(t);
+                container.appendChild(wrap);
             };
 
             const buildTable = (columns, rows) => {
                 const table = document.createElement('table');
                 table.style.width = '100%';
                 table.style.borderCollapse = 'collapse';
-                table.style.marginBottom = '12px';
+                table.style.marginBottom = '10px';
                 const thead = document.createElement('thead');
                 const trh = document.createElement('tr');
                 columns.forEach(c => {
                     const th = document.createElement('th');
                     th.textContent = c;
-                    th.style.textAlign = 'left';
+                    th.style.textAlign = dir === 'rtl' ? 'right' : 'left';
                     th.style.fontSize = '11px';
-                    th.style.color = '#374151';
-                    th.style.borderBottom = '1px solid #e5e7eb';
+                    th.style.color = '#0f172a';
+                    th.style.background = '#f1f5f9';
+                    th.style.borderBottom = '1px solid #e2e8f0';
                     th.style.padding = '8px 6px';
                     trh.appendChild(th);
                 });
                 thead.appendChild(trh);
                 const tbody = document.createElement('tbody');
-                rows.forEach(r => {
+                rows.forEach((r, idx) => {
                     const tr = document.createElement('tr');
+                    if (idx % 2 === 1) tr.style.background = '#f8fafc';
                     r.forEach((cell) => {
                         const td = document.createElement('td');
                         td.textContent = cell;
                         td.style.fontSize = '11px';
-                        td.style.color = '#111827';
+                        td.style.color = '#0f172a';
                         td.style.padding = '8px 6px';
-                        td.style.borderBottom = '1px solid #f3f4f6';
+                        td.style.borderBottom = '1px solid #f1f5f9';
                         tr.appendChild(td);
                     });
                     tbody.appendChild(tr);
@@ -1169,8 +1229,7 @@ class WorkManagerApp {
                 container.appendChild(table);
             };
 
-            // Work + Withdrawals
-            addSectionTitle(this.getText('Work + Withdrawals', 'العمل + السحوبات'));
+            sectionTitle(this.getText('Work + Withdrawals', 'العمل + السحوبات'));
             const workColumns = [
                 this.getText('Date', 'التاريخ'),
                 this.getText('Start', 'البداية'),
@@ -1192,17 +1251,12 @@ class WorkManagerApp {
             } else {
                 const p = document.createElement('p');
                 p.textContent = this.getText('No work entries found.', 'لا توجد إدخالات عمل.');
-                p.style.color = '#6b7280';
+                p.style.color = '#64748b';
                 p.style.fontSize = '12px';
                 container.appendChild(p);
             }
 
             const withdrawals = this.data.expenses.filter(e => e.category === 'withdrawal');
-            const wdTitle = document.createElement('h3');
-            wdTitle.textContent = this.getText('Withdrawals', 'السحوبات');
-            wdTitle.style.fontSize = '14px';
-            wdTitle.style.margin = '10px 0 6px 0';
-            container.appendChild(wdTitle);
             const wdColumns = [
                 this.getText('Date', 'التاريخ'),
                 this.getText('Description', 'الوصف'),
@@ -1215,16 +1269,9 @@ class WorkManagerApp {
             ]);
             if (wdRows.length) {
                 buildTable(wdColumns, wdRows);
-            } else {
-                const p = document.createElement('p');
-                p.textContent = this.getText('No withdrawals found.', 'لا توجد سحوبات.');
-                p.style.color = '#6b7280';
-                p.style.fontSize = '12px';
-                container.appendChild(p);
             }
 
-            // Expenses (excluding withdrawals)
-            addSectionTitle(this.getText('Expenses', 'المصاريف'));
+            sectionTitle(this.getText('Expenses', 'المصاريف'));
             const nonWithdrawals = this.data.expenses.filter(e => e.category !== 'withdrawal');
             const expColumns = [
                 this.getText('Date', 'التاريخ'),
@@ -1240,16 +1287,9 @@ class WorkManagerApp {
             ]);
             if (expRows.length) {
                 buildTable(expColumns, expRows);
-            } else {
-                const p = document.createElement('p');
-                p.textContent = this.getText('No expenses found.', 'لا توجد مصاريف.');
-                p.style.color = '#6b7280';
-                p.style.fontSize = '12px';
-                container.appendChild(p);
             }
 
-            // Debts
-            addSectionTitle(this.getText('Debts', 'الديون'));
+            sectionTitle(this.getText('Debts', 'الديون'));
             const debtColumns = [
                 this.getText('Date', 'التاريخ'),
                 this.getText('Type', 'النوع'),
@@ -1268,50 +1308,70 @@ class WorkManagerApp {
             ]);
             if (debtRows.length) {
                 buildTable(debtColumns, debtRows);
-            } else {
-                const p = document.createElement('p');
-                p.textContent = this.getText('No debts found.', 'لا توجد ديون.');
-                p.style.color = '#6b7280';
-                p.style.fontSize = '12px';
-                container.appendChild(p);
             }
 
-            // Place offscreen for proper render size
-            const wrapper = document.createElement('div');
-            wrapper.style.position = 'absolute';
-            wrapper.style.left = '-9999px';
-            wrapper.style.top = '0';
-            wrapper.style.backgroundColor = '#ffffff';
-            container.setAttribute('dir', document.documentElement.getAttribute('dir') || (this.currentLanguage === 'ar' ? 'rtl' : 'ltr'));
-            wrapper.appendChild(container);
-            document.body.appendChild(wrapper);
-            void wrapper.offsetHeight;
+            const footer = document.createElement('div');
+            footer.style.marginTop = '12px';
+            footer.style.paddingTop = '8px';
+            footer.style.borderTop = '1px solid #e5e7eb';
+            footer.style.display = 'flex';
+            footer.style.justifyContent = 'space-between';
+            footer.style.alignItems = 'center';
+            const left = document.createElement('div');
+            left.textContent = this.getText('Generated by Work Manager', 'تم الإنشاء بواسطة مدير العمل');
+            left.style.color = '#94a3b8';
+            left.style.fontSize = '11px';
+            const right = document.createElement('div');
+            right.textContent = new Date().toLocaleString(locale);
+            right.style.color = '#94a3b8';
+            right.style.fontSize = '11px';
+            footer.appendChild(left);
+            footer.appendChild(right);
+            container.appendChild(footer);
+
+            // Attach the container invisibly but within the layout (visibility hidden tends to be safest)
+            container.setAttribute('dir', dir);
+            container.style.position = 'absolute';
+            container.style.left = '0';
+            container.style.top = '0';
+            container.style.visibility = 'hidden';
+            container.style.pointerEvents = 'none';
+            container.style.width = '1000px';
+            container.style.backgroundColor = '#ffffff';
+            document.body.appendChild(container);
+            // Give the browser a moment to layout fonts/styles
+            void container.offsetHeight;
 
             const opt = {
-                margin:       [10, 10, 10, 10],
-                filename:     `work-manager-report-${new Date().toISOString().split('T')[0]}.pdf`,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#ffffff', windowWidth: wrapper.scrollWidth },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-                pagebreak:    { mode: ['css', 'legacy'] }
+                margin: [10, 10, 12, 10],
+                filename: `work-manager-report-${new Date().toISOString().split('T')[0]}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: {
+                    scale: Math.min(2, window.devicePixelRatio || 2),
+                    useCORS: true,
+                    backgroundColor: '#ffffff',
+                    logging: false,
+                    removeContainer: true
+                },
+                jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak: { mode: ['css', 'legacy'] }
             };
 
             if (typeof html2pdf !== 'undefined') {
                 setTimeout(() => {
-                    html2pdf().set(opt).from(wrapper).save().then(() => {
-                        wrapper.remove();
+                    html2pdf().set(opt).from(container).save().then(() => {
+                        container.remove();
                         this.showSuccessMessage(this.getText('PDF exported successfully!', 'تم تصدير ملف PDF بنجاح!'));
                     }).catch(() => {
-                        wrapper.remove();
+                        container.remove();
                         this.showErrorMessage(this.getText('Failed to export PDF', 'فشل تصدير PDF'));
                     });
-                }, 200);
+                }, 400);
             } else {
-                wrapper.remove();
+                container.remove();
                 this.showErrorMessage(this.getText('PDF library not loaded', 'لم يتم تحميل مكتبة PDF'));
             }
-        } catch (err) {
-            console.error(err);
+        } catch (_) {
             this.showErrorMessage(this.getText('Failed to export PDF', 'فشل تصدير PDF'));
         }
     }
@@ -1340,27 +1400,20 @@ class WorkManagerApp {
     }
 
     clearAllData() {
+        // Clear only operational data while preserving user settings
+        const currentSettings = this.data.settings;
         this.data = {
             workEntries: [],
             expenses: [],
             debts: [],
             activities: [],
-            settings: {
-                hourlyRate: 10.00,
-                currency: 'EUR',
-                theme: 'light',
-                primaryColor: '#3b82f6',
-                accentColor: '#10b981',
-                fontSize: 'medium'
-            }
+            settings: currentSettings
         };
         this.saveData();
-        this.loadSettingsToForms();
-        this.applyTheme();
         this.updateDashboard();
         this.updateAllTables();
         this.closeModal();
-        this.showSuccessMessage(this.getText('All data cleared!', 'تم مسح جميع البيانات!'));
+        this.showSuccessMessage(this.getText('All data cleared (settings preserved)!', 'تم مسح جميع البيانات (مع الحفاظ على الإعدادات)!'));
     }
 
     // Modal Management
@@ -1387,6 +1440,44 @@ class WorkManagerApp {
         `;
         
         modal.classList.add('active');
+
+        // Accessibility: focus management and focus trap
+        const modalPanel = modal.querySelector('.modal');
+        if (modalPanel) {
+            modalPanel.setAttribute('role', 'dialog');
+            modalPanel.setAttribute('aria-modal', 'true');
+        }
+
+        // Save last focused element to restore later
+        this.lastFocusedElement = document.activeElement;
+
+        // Focus the confirm button by default
+        const confirmBtn = document.getElementById('confirm-action');
+        if (confirmBtn && typeof confirmBtn.focus === 'function') {
+            setTimeout(() => confirmBtn.focus(), 0);
+        }
+
+        // Trap focus inside modal
+        const getFocusable = () => Array.from(modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'))
+            .filter(el => !el.hasAttribute('disabled'));
+        this.modalKeydownHandler = (e) => {
+            if (e.key === 'Tab') {
+                const focusables = getFocusable();
+                if (focusables.length === 0) return;
+                const first = focusables[0];
+                const last = focusables[focusables.length - 1];
+                if (e.shiftKey && document.activeElement === first) {
+                    e.preventDefault();
+                    last.focus();
+                } else if (!e.shiftKey && document.activeElement === last) {
+                    e.preventDefault();
+                    first.focus();
+                }
+            } else if (e.key === 'Escape') {
+                this.closeModal();
+            }
+        };
+        modal.addEventListener('keydown', this.modalKeydownHandler);
         
         document.getElementById('confirm-action').addEventListener('click', () => {
             onConfirm();
@@ -1397,11 +1488,23 @@ class WorkManagerApp {
         const modal = document.getElementById('edit-modal');
         if (modal && modal.classList.contains('active')) {
             modal.classList.remove('active');
+            // Remove focus trap handler
+            if (this.modalKeydownHandler) {
+                modal.removeEventListener('keydown', this.modalKeydownHandler);
+                this.modalKeydownHandler = null;
+            }
             // Clear the edit form
             const editForm = document.getElementById('edit-form');
             if (editForm) {
                 editForm.innerHTML = '';
             }
+            // Restore focus to the previously focused element
+            if (this.lastFocusedElement && typeof this.lastFocusedElement.focus === 'function') {
+                setTimeout(() => {
+                    try { this.lastFocusedElement.focus(); } catch (_) {}
+                }, 0);
+            }
+            this.lastFocusedElement = null;
         }
     }
 
