@@ -2258,11 +2258,7 @@ class WorkManagerApp {
                 }
             }
             
-            // Add subtle animation to time
-            timeElement.style.transform = 'scale(1.05)';
-            setTimeout(() => {
-                timeElement.style.transform = 'scale(1)';
-            }, 100);
+            // No animation - static display
         }
     }
 
@@ -2524,7 +2520,7 @@ class WorkManagerApp {
         // Initialize system time immediately
         this.updateSystemTime();
         
-        // Update system time every second
+        // Update system time every second (without visual animation)
         const timeInterval = setInterval(() => {
             this.updateSystemTime();
         }, 1000);
