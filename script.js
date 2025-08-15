@@ -108,6 +108,16 @@ class WorkManagerApp {
             workEntries: [],
             expenses: [],
             debts: [],
+            workSchedule: {
+                monday: { isWorkDay: true, start: '09:00', end: '17:00' },
+                tuesday: { isWorkDay: true, start: '09:00', end: '17:00' },
+                wednesday: { isWorkDay: true, start: '09:00', end: '17:00' },
+                thursday: { isWorkDay: true, start: '09:00', end: '17:00' },
+                friday: { isWorkDay: true, start: '09:00', end: '17:00' },
+                saturday: { isWorkDay: false, start: '09:00', end: '17:00' },
+                sunday: { isWorkDay: false, start: '09:00', end: '17:00' }
+            },
+            holidays: [],
             settings: {
                 hourlyRate: 10.00,
                 currency: 'EUR',
@@ -139,6 +149,7 @@ class WorkManagerApp {
             this.updateAllTables();
             this.applyTheme();
             this.setDefaultDates();
+            this.initWorkSchedule();
             
             // Add a subtle entrance animation to the main content
             const mainContent = document.querySelector('.main-content');
@@ -396,11 +407,7 @@ class WorkManagerApp {
                 menuToggle.classList.remove('active');
             }
         });
-        // Cloud backup events
-        const cloudBackupBtn = document.getElementById('cloud-backup-btn');
-        const cloudRestoreBtn = document.getElementById('cloud-restore-btn');
-        if (cloudBackupBtn) cloudBackupBtn.addEventListener('click', () => this.backupToGist());
-        if (cloudRestoreBtn) cloudRestoreBtn.addEventListener('click', () => this.restoreFromGist());
+
     }
 
     // Authentication
@@ -1044,96 +1051,11 @@ class WorkManagerApp {
         this.showSuccessMessage(this.getText('Data exported successfully!', 'تم تصدير البيانات بنجاح!'));
     }
 
-    // Simple client-side encryption (optional)
-    encryptData(plainText, passphrase) {
-        if (!passphrase) return plainText;
-        try {
-            const enc = new TextEncoder().encode(plainText);
-            const key = new TextEncoder().encode(passphrase.padEnd(32, '\u0000')).slice(0, 32);
-            // XOR fallback (not strong). For stronger security, replace with SubtleCrypto AES-GCM.
-            const out = enc.map((b, i) => b ^ key[i % key.length]);
-            return btoa(String.fromCharCode(...out));
-        } catch (_) { return plainText; }
-    }
 
-    decryptData(cipherText, passphrase) {
-        if (!passphrase) return cipherText;
-        try {
-            const bin = atob(cipherText);
-            const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
-            const key = new TextEncoder().encode(passphrase.padEnd(32, '\u0000')).slice(0, 32);
-            const out = bytes.map((b, i) => b ^ key[i % key.length]);
-            return new TextDecoder().decode(out);
-        } catch (_) { return cipherText; }
-    }
 
-    async backupToGist() {
-        const token = document.getElementById('gist-token')?.value?.trim();
-        const gistId = document.getElementById('gist-id')?.value?.trim();
-        const filename = document.getElementById('gist-filename')?.value?.trim() || 'work-manager-backup.json';
-        const passphrase = document.getElementById('cloud-passphrase')?.value || '';
-        if (!token) {
-            this.showErrorMessage(this.getText('GitHub token is required', 'رمز GitHub مطلوب'));
-            return;
-        }
 
-        const payload = JSON.stringify(this.data);
-        const content = this.encryptData(payload, passphrase);
 
-        const body = gistId ?
-            { files: { [filename]: { content } } } :
-            { description: 'Work Manager backup', public: false, files: { [filename]: { content } } };
 
-        const endpoint = gistId ? `https://api.github.com/gists/${gistId}` : 'https://api.github.com/gists';
-        const method = gistId ? 'PATCH' : 'POST';
-
-        try {
-            const res = await fetch(endpoint, {
-                method,
-                headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github+json' },
-                body: JSON.stringify(body)
-            });
-            if (!res.ok) throw new Error('request_failed');
-            const data = await res.json();
-            if (!gistId) {
-                const newId = data.id;
-                const gistIdInput = document.getElementById('gist-id');
-                if (gistIdInput) gistIdInput.value = newId;
-            }
-            this.showSuccessMessage(this.getText('Cloud backup saved successfully!', 'تم حفظ النسخة السحابية بنجاح!'));
-        } catch (e) {
-            this.showErrorMessage(this.getText('Failed to save cloud backup', 'فشل حفظ النسخة السحابية'));
-        }
-    }
-
-    async restoreFromGist() {
-        const token = document.getElementById('gist-token')?.value?.trim();
-        const gistId = document.getElementById('gist-id')?.value?.trim();
-        const filename = document.getElementById('gist-filename')?.value?.trim() || 'work-manager-backup.json';
-        const passphrase = document.getElementById('cloud-passphrase')?.value || '';
-        if (!token || !gistId) {
-            this.showErrorMessage(this.getText('GitHub token and Gist ID are required', 'رمز GitHub ومعرّف Gist مطلوبان'));
-            return;
-        }
-        try {
-            const res = await fetch(`https://api.github.com/gists/${gistId}`, {
-                headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github+json' }
-            });
-            if (!res.ok) throw new Error('request_failed');
-            const gist = await res.json();
-            const file = gist.files?.[filename];
-            if (!file || !file.content) throw new Error('file_not_found');
-            const decrypted = this.decryptData(file.content, passphrase);
-            const importedData = JSON.parse(decrypted);
-            this.data = { ...this.data, ...importedData };
-            this.saveData();
-            this.updateDashboard();
-            this.updateAllTables();
-            this.showSuccessMessage(this.getText('Cloud backup loaded successfully!', 'تم تحميل النسخة السحابية بنجاح!'));
-        } catch (e) {
-            this.showErrorMessage(this.getText('Failed to load cloud backup', 'فشل تحميل النسخة السحابية'));
-        }
-    }
 
     // Export to PDF (professional template)
     exportPDF() {
@@ -2623,6 +2545,750 @@ class WorkManagerApp {
             time: timeInterval,
             refresh: refreshInterval
         };
+    }
+
+    // ===== APPOINTMENT MANAGEMENT =====
+    
+    initWorkSchedule() {
+        this.renderWeeklySchedule();
+        this.updateScheduleStats();
+        this.renderHolidaysList();
+        this.setupScheduleEventListeners();
+    }
+
+    setupScheduleEventListeners() {
+        const editScheduleBtn = document.getElementById('edit-schedule-btn');
+        const addHolidayBtn = document.getElementById('add-holiday-btn');
+        const scheduleForm = document.getElementById('schedule-form');
+        const holidayForm = document.getElementById('holiday-form');
+
+        if (editScheduleBtn) {
+            editScheduleBtn.addEventListener('click', () => this.openScheduleModal());
+        }
+
+        if (addHolidayBtn) {
+            addHolidayBtn.addEventListener('click', () => this.openHolidayModal());
+        }
+
+        if (scheduleForm) {
+            scheduleForm.addEventListener('submit', (e) => this.handleScheduleSubmit(e));
+        }
+
+        if (holidayForm) {
+            holidayForm.addEventListener('submit', (e) => this.handleHolidaySubmit(e));
+        }
+    }
+
+    renderWeeklySchedule() {
+        const grid = document.getElementById('weekly-schedule-grid');
+        if (!grid) return;
+
+        const days = [
+            { name: this.getText('Sunday', 'الأحد'), key: 'sunday', isWorkDay: false },
+            { name: this.getText('Monday', 'الاثنين'), key: 'monday', isWorkDay: true },
+            { name: this.getText('Tuesday', 'الثلاثاء'), key: 'tuesday', isWorkDay: true },
+            { name: this.getText('Wednesday', 'الأربعاء'), key: 'wednesday', isWorkDay: true },
+            { name: this.getText('Thursday', 'الخميس'), key: 'thursday', isWorkDay: true },
+            { name: this.getText('Friday', 'الجمعة'), key: 'friday', isWorkDay: true },
+            { name: this.getText('Saturday', 'السبت'), key: 'saturday', isWorkDay: false }
+        ];
+
+        grid.innerHTML = days.map(day => {
+            const schedule = this.data.workSchedule?.[day.key] || { start: '09:00', end: '17:00' };
+            const isWorkDay = this.data.workSchedule?.[day.key]?.isWorkDay ?? day.isWorkDay;
+            const status = isWorkDay ? 'work' : 'off';
+            const statusText = isWorkDay ? this.getText('Work', 'عمل') : this.getText('Off', 'عطلة');
+            const cardClass = isWorkDay ? 'work-day' : 'weekend';
+
+            return `
+                <div class="weekly-day-card ${cardClass}">
+                    <div class="day-name">${day.name}</div>
+                    <div class="day-hours">${schedule.start} - ${schedule.end}</div>
+                    <div class="day-status ${status}">${statusText}</div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    updateScheduleStats() {
+        const workDaysCount = document.getElementById('work-days-count');
+        const dailyHours = document.getElementById('daily-hours');
+        const holidaysCount = document.getElementById('holidays-count');
+        const weeklyHours = document.getElementById('weekly-hours');
+
+        if (workDaysCount) {
+            const workDays = Object.values(this.data.workSchedule || {}).filter(day => day.isWorkDay).length;
+            workDaysCount.textContent = workDays;
+        }
+
+        if (dailyHours) {
+            const avgHours = this.calculateAverageDailyHours();
+            dailyHours.textContent = avgHours;
+        }
+
+        if (holidaysCount) {
+            const holidays = this.data.holidays?.length || 0;
+            holidaysCount.textContent = holidays;
+        }
+
+        if (weeklyHours) {
+            const weekly = this.calculateWeeklyHours();
+            weeklyHours.textContent = weekly;
+        }
+    }
+
+    calculateAverageDailyHours() {
+        const workDays = Object.values(this.data.workSchedule || {}).filter(day => day.isWorkDay);
+        if (workDays.length === 0) return 8;
+
+        const totalHours = workDays.reduce((total, day) => {
+            const start = new Date(`2000-01-01T${day.start}`);
+            const end = new Date(`2000-01-01T${day.end}`);
+            return total + (end - start) / (1000 * 60 * 60);
+        }, 0);
+
+        return Math.round(totalHours / workDays.length);
+    }
+
+    calculateWeeklyHours() {
+        const workDays = Object.values(this.data.workSchedule || {}).filter(day => day.isWorkDay);
+        const totalHours = workDays.reduce((total, day) => {
+            const start = new Date(`2000-01-01T${day.start}`);
+            const end = new Date(`2000-01-01T${day.end}`);
+            return total + (end - start) / (1000 * 60 * 60);
+        }, 0);
+
+        return Math.round(totalHours);
+    }
+
+    renderHolidaysList() {
+        const list = document.getElementById('holidays-list');
+        if (!list) return;
+
+        const holidays = this.data.holidays || [];
+        
+        if (holidays.length === 0) {
+            list.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-umbrella-beach"></i>
+                    <p>${this.getText('No holidays added yet', 'لم يتم إضافة عطل بعد')}</p>
+                </div>
+            `;
+            return;
+        }
+
+        list.innerHTML = holidays.map(holiday => {
+            const startDate = new Date(holiday.startDate).toLocaleDateString();
+            const endDate = new Date(holiday.endDate).toLocaleDateString();
+            const typeClass = holiday.type || 'public';
+            const typeText = this.getHolidayTypeText(holiday.type);
+
+            return `
+                <div class="holiday-item">
+                    <div class="holiday-info">
+                        <div class="holiday-name">${holiday.name}</div>
+                        <div class="holiday-dates">${startDate} - ${endDate}</div>
+                        <span class="holiday-type ${typeClass}">${typeText}</span>
+                    </div>
+                    <div class="holiday-actions">
+                        <button class="btn btn-sm btn-secondary" onclick="app.editHoliday('${holiday.id}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="app.deleteHoliday('${holiday.id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    getHolidayTypeText(type) {
+        const types = {
+            public: { en: 'Public Holiday', ar: 'عطلة رسمية' },
+            personal: { en: 'Personal Leave', ar: 'إجازة شخصية' },
+            sick: { en: 'Sick Leave', ar: 'إجازة مرضية' },
+            vacation: { en: 'Vacation', ar: 'إجازة' }
+        };
+        const typeInfo = types[type] || types.public;
+        return this.getText(typeInfo.en, typeInfo.ar);
+    }
+
+    openScheduleModal() {
+        const modal = document.getElementById('schedule-edit-modal');
+        this.populateScheduleForm();
+        modal.classList.add('active');
+        this.trapFocus(modal);
+    }
+
+    closeScheduleModal() {
+        const modal = document.getElementById('schedule-edit-modal');
+        modal.classList.remove('active');
+        this.restoreFocus();
+    }
+
+    populateScheduleForm() {
+        const schedule = this.data.workSchedule || {};
+        const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+        days.forEach(day => {
+            const dayData = schedule[day] || { start: '09:00', end: '17:00', isWorkDay: day !== 'saturday' && day !== 'sunday' };
+            
+            const checkbox = document.getElementById(`${day}-work`);
+            const startInput = document.getElementById(`${day}-start`);
+            const endInput = document.getElementById(`${day}-end`);
+
+            if (checkbox) checkbox.checked = dayData.isWorkDay;
+            if (startInput) startInput.value = dayData.start;
+            if (endInput) endInput.value = dayData.end;
+        });
+    }
+
+    handleScheduleSubmit(e) {
+        e.preventDefault();
+        
+        const schedule = {};
+        const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+        days.forEach(day => {
+            const checkbox = document.getElementById(`${day}-work`);
+            const startInput = document.getElementById(`${day}-start`);
+            const endInput = document.getElementById(`${day}-end`);
+
+            schedule[day] = {
+                isWorkDay: checkbox?.checked || false,
+                start: startInput?.value || '09:00',
+                end: endInput?.value || '17:00'
+            };
+        });
+
+        this.data.workSchedule = schedule;
+        this.saveData();
+        this.renderWeeklySchedule();
+        this.updateScheduleStats();
+        this.closeScheduleModal();
+        this.showSuccessMessage(this.getText('Work schedule updated successfully!', 'تم تحديث جدول العمل بنجاح!'));
+    }
+
+    openHolidayModal(holiday = null) {
+        const modal = document.getElementById('holiday-modal');
+        const modalTitle = document.getElementById('holiday-modal-title');
+        const form = document.getElementById('holiday-form');
+
+        if (holiday) {
+            modalTitle.textContent = this.getText('Edit Holiday', 'تعديل العطلة');
+            this.populateHolidayForm(holiday);
+        } else {
+            modalTitle.textContent = this.getText('Add Holiday', 'إضافة عطلة');
+            form.reset();
+            this.setDefaultHolidayDates();
+        }
+
+        modal.classList.add('active');
+        this.trapFocus(modal);
+    }
+
+    closeHolidayModal() {
+        const modal = document.getElementById('holiday-modal');
+        modal.classList.remove('active');
+        this.restoreFocus();
+    }
+
+    setDefaultHolidayDates() {
+        const startInput = document.getElementById('holiday-start-date');
+        const endInput = document.getElementById('holiday-end-date');
+        
+        if (startInput) {
+            const today = new Date();
+            startInput.value = today.toISOString().split('T')[0];
+        }
+        
+        if (endInput) {
+            const today = new Date();
+            endInput.value = today.toISOString().split('T')[0];
+        }
+    }
+
+    populateHolidayForm(holiday) {
+        const fields = ['holiday-name', 'holiday-type', 'holiday-start-date', 'holiday-end-date', 'holiday-description'];
+
+        fields.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field && holiday[fieldId.replace('holiday-', '')] !== undefined) {
+                field.value = holiday[fieldId.replace('holiday-', '')];
+            }
+        });
+    }
+
+    handleHolidaySubmit(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        const holiday = {
+            id: Date.now().toString(),
+            name: formData.get('holiday-name') || document.getElementById('holiday-name').value,
+            type: formData.get('holiday-type') || document.getElementById('holiday-type').value,
+            startDate: formData.get('holiday-start-date') || document.getElementById('holiday-start-date').value,
+            endDate: formData.get('holiday-end-date') || document.getElementById('holiday-end-date').value,
+            description: formData.get('holiday-description') || document.getElementById('holiday-description').value
+        };
+
+        if (!this.data.holidays) this.data.holidays = [];
+        this.data.holidays.push(holiday);
+        
+        this.saveData();
+        this.renderHolidaysList();
+        this.updateScheduleStats();
+        this.closeHolidayModal();
+        this.showSuccessMessage(this.getText('Holiday added successfully!', 'تم إضافة العطلة بنجاح!'));
+    }
+
+    editHoliday(id) {
+        const holiday = this.data.holidays?.find(h => h.id === id);
+        if (holiday) {
+            this.openHolidayModal(holiday);
+        }
+    }
+
+    deleteHoliday(id) {
+        if (confirm(this.getText('Are you sure you want to delete this holiday?', 'هل أنت متأكد من حذف هذه العطلة؟'))) {
+            this.data.holidays = this.data.holidays?.filter(h => h.id !== id) || [];
+            this.saveData();
+            this.renderHolidaysList();
+            this.updateScheduleStats();
+            this.showSuccessMessage(this.getText('Holiday deleted successfully!', 'تم حذف العطلة بنجاح!'));
+        }
+    }
+
+    openAppointmentModal(appointment = null) {
+        const modal = document.getElementById('appointment-modal');
+        const modalTitle = document.getElementById('appointment-modal-title');
+        const form = document.getElementById('appointment-form');
+
+        if (appointment) {
+            // Edit mode
+            modalTitle.textContent = this.getText('Edit Appointment', 'تعديل الموعد');
+            this.populateAppointmentForm(appointment);
+        } else {
+            // Add mode
+            modalTitle.textContent = this.getText('Add Appointment', 'إضافة موعد');
+            form.reset();
+            this.setDefaultAppointmentDate();
+        }
+
+        modal.classList.add('active');
+        this.trapFocus(modal);
+    }
+
+    closeAppointmentModal() {
+        const modal = document.getElementById('appointment-modal');
+        modal.classList.remove('active');
+        this.restoreFocus();
+    }
+
+    setDefaultAppointmentDate() {
+        const dateInput = document.getElementById('appointment-date');
+        const timeInput = document.getElementById('appointment-time');
+        
+        if (dateInput) {
+            const today = new Date();
+            dateInput.value = today.toISOString().split('T')[0];
+        }
+        
+        if (timeInput) {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            timeInput.value = `${hours}:${minutes}`;
+        }
+    }
+
+    populateAppointmentForm(appointment) {
+        const form = document.getElementById('appointment-form');
+        const fields = [
+            'appointment-title', 'appointment-category', 'appointment-date',
+            'appointment-time', 'appointment-duration', 'appointment-priority',
+            'appointment-location', 'appointment-description', 'appointment-reminder',
+            'appointment-status'
+        ];
+
+        fields.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field && appointment[fieldId.replace('appointment-', '')] !== undefined) {
+                field.value = appointment[fieldId.replace('appointment-', '')];
+            }
+        });
+    }
+
+    handleAppointmentSubmit(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(e.target);
+        const appointmentData = {
+            id: Date.now().toString(),
+            title: formData.get('appointment-title'),
+            category: formData.get('appointment-category'),
+            date: formData.get('appointment-date'),
+            time: formData.get('appointment-time'),
+            duration: parseInt(formData.get('appointment-duration')) || 60,
+            priority: formData.get('appointment-priority'),
+            location: formData.get('appointment-location'),
+            description: formData.get('appointment-description'),
+            reminder: formData.get('appointment-reminder'),
+            status: formData.get('appointment-status'),
+            createdAt: new Date().toISOString()
+        };
+
+        // Check if editing existing appointment
+        const existingIndex = this.data.appointments.findIndex(apt => apt.id === appointmentData.id);
+        if (existingIndex !== -1) {
+            this.data.appointments[existingIndex] = appointmentData;
+        } else {
+            this.data.appointments.push(appointmentData);
+        }
+
+        this.saveData();
+        this.closeAppointmentModal();
+        this.renderCalendar();
+        this.updateAppointmentStats();
+        this.renderAppointmentsList();
+        
+        this.showNotification(
+            this.getText('Appointment saved successfully!', 'تم حفظ الموعد بنجاح!'),
+            'success'
+        );
+    }
+
+    renderCalendar() {
+        const calendarGrid = document.getElementById('calendar-grid');
+        const currentMonthElement = document.getElementById('current-month');
+        
+        if (!calendarGrid) return;
+
+        const year = this.currentMonth.getFullYear();
+        const month = this.currentMonth.getMonth();
+        
+        // Update month display
+        if (currentMonthElement) {
+            const monthNames = [
+                this.getText('January', 'يناير'), this.getText('February', 'فبراير'),
+                this.getText('March', 'مارس'), this.getText('April', 'أبريل'),
+                this.getText('May', 'مايو'), this.getText('June', 'يونيو'),
+                this.getText('July', 'يوليو'), this.getText('August', 'أغسطس'),
+                this.getText('September', 'سبتمبر'), this.getText('October', 'أكتوبر'),
+                this.getText('November', 'نوفمبر'), this.getText('December', 'ديسمبر')
+            ];
+            currentMonthElement.textContent = `${monthNames[month]} ${year}`;
+        }
+
+        // Clear calendar
+        calendarGrid.innerHTML = '';
+
+        // Get first day of month and number of days
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        const startDate = new Date(firstDay);
+        startDate.setDate(startDate.getDate() - firstDay.getDay());
+
+        // Generate calendar days
+        for (let i = 0; i < 42; i++) {
+            const currentDate = new Date(startDate);
+            currentDate.setDate(startDate.getDate() + i);
+            
+            const dayElement = this.createCalendarDay(currentDate, month);
+            calendarGrid.appendChild(dayElement);
+        }
+    }
+
+    createCalendarDay(date, currentMonth) {
+        const dayElement = document.createElement('div');
+        dayElement.className = 'calendar-day';
+        
+        const dayNumber = date.getDate();
+        const isCurrentMonth = date.getMonth() === currentMonth;
+        const isToday = this.isToday(date);
+        const hasAppointments = this.getAppointmentsForDate(date).length > 0;
+
+        if (!isCurrentMonth) {
+            dayElement.classList.add('other-month');
+        }
+        if (isToday) {
+            dayElement.classList.add('today');
+        }
+        if (hasAppointments) {
+            dayElement.classList.add('has-appointments');
+        }
+
+        dayElement.innerHTML = `
+            <div class="calendar-day-number">${dayNumber}</div>
+            <div class="calendar-day-appointments">
+                ${this.getAppointmentDots(date)}
+            </div>
+        `;
+
+        dayElement.addEventListener('click', () => this.handleDayClick(date));
+        
+        return dayElement;
+    }
+
+    getAppointmentDots(date) {
+        const appointments = this.getAppointmentsForDate(date);
+        const dots = appointments.slice(0, 3).map(apt => {
+            const priorityClass = apt.priority || 'medium';
+            return `<div class="appointment-dot ${priorityClass}"></div>`;
+        });
+        return dots.join('');
+    }
+
+    getAppointmentsForDate(date) {
+        const dateStr = date.toISOString().split('T')[0];
+        return this.data.appointments.filter(apt => apt.date === dateStr);
+    }
+
+    isToday(date) {
+        const today = new Date();
+        return date.toDateString() === today.toDateString();
+    }
+
+    handleDayClick(date) {
+        const appointments = this.getAppointmentsForDate(date);
+        if (appointments.length > 0) {
+            // Show appointments for this day
+            this.showDayAppointments(date, appointments);
+        } else {
+            // Add new appointment for this day
+            this.openAppointmentModalForDate(date);
+        }
+    }
+
+    openAppointmentModalForDate(date) {
+        this.openAppointmentModal();
+        const dateInput = document.getElementById('appointment-date');
+        if (dateInput) {
+            dateInput.value = date.toISOString().split('T')[0];
+        }
+    }
+
+    showDayAppointments(date, appointments) {
+        // This could be implemented as a modal or dropdown
+        console.log(`Appointments for ${date.toDateString()}:`, appointments);
+    }
+
+    navigateMonth(direction) {
+        this.currentMonth.setMonth(this.currentMonth.getMonth() + direction);
+        this.renderCalendar();
+    }
+
+    goToToday() {
+        this.currentMonth = new Date();
+        this.renderCalendar();
+    }
+
+    updateAppointmentStats() {
+        const today = new Date().toISOString().split('T')[0];
+        const now = new Date();
+
+        const stats = {
+            today: this.data.appointments.filter(apt => apt.date === today).length,
+            upcoming: this.data.appointments.filter(apt => 
+                apt.date > today && apt.status !== 'cancelled'
+            ).length,
+            completed: this.data.appointments.filter(apt => 
+                apt.status === 'completed'
+            ).length,
+            overdue: this.data.appointments.filter(apt => {
+                const aptDate = new Date(apt.date + 'T' + apt.time);
+                return aptDate < now && apt.status === 'scheduled';
+            }).length
+        };
+
+        // Update stats display
+        const elements = {
+            'today-appointments': stats.today,
+            'upcoming-appointments': stats.upcoming,
+            'completed-appointments': stats.completed,
+            'overdue-appointments': stats.overdue
+        };
+
+        Object.entries(elements).forEach(([id, value]) => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = value;
+            }
+        });
+    }
+
+    renderAppointmentsList() {
+        const appointmentsList = document.getElementById('appointments-list');
+        const filter = document.getElementById('appointments-filter')?.value || 'all';
+        
+        if (!appointmentsList) return;
+
+        let filteredAppointments = [...this.data.appointments];
+
+        // Apply filter
+        switch (filter) {
+            case 'today':
+                const today = new Date().toISOString().split('T')[0];
+                filteredAppointments = filteredAppointments.filter(apt => apt.date === today);
+                break;
+            case 'upcoming':
+                const now = new Date();
+                filteredAppointments = filteredAppointments.filter(apt => {
+                    const aptDate = new Date(apt.date + 'T' + apt.time);
+                    return aptDate > now && apt.status !== 'cancelled';
+                });
+                break;
+            case 'completed':
+                filteredAppointments = filteredAppointments.filter(apt => apt.status === 'completed');
+                break;
+            case 'overdue':
+                const currentTime = new Date();
+                filteredAppointments = filteredAppointments.filter(apt => {
+                    const aptDate = new Date(apt.date + 'T' + apt.time);
+                    return aptDate < currentTime && apt.status === 'scheduled';
+                });
+                break;
+        }
+
+        // Sort appointments by date and time
+        filteredAppointments.sort((a, b) => {
+            const dateA = new Date(a.date + 'T' + a.time);
+            const dateB = new Date(b.date + 'T' + b.time);
+            return dateA - dateB;
+        });
+
+        appointmentsList.innerHTML = '';
+
+        if (filteredAppointments.length === 0) {
+            appointmentsList.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-calendar-times"></i>
+                    <p>${this.getText('No appointments found', 'لا توجد مواعيد')}</p>
+                </div>
+            `;
+            return;
+        }
+
+        filteredAppointments.forEach(appointment => {
+            const appointmentElement = this.createAppointmentElement(appointment);
+            appointmentsList.appendChild(appointmentElement);
+        });
+    }
+
+    createAppointmentElement(appointment) {
+        const element = document.createElement('div');
+        element.className = 'appointment-item';
+        
+        const date = new Date(appointment.date + 'T' + appointment.time);
+        const isOverdue = date < new Date() && appointment.status === 'scheduled';
+        
+        element.innerHTML = `
+            <div class="appointment-header">
+                <h3 class="appointment-title">${appointment.title}</h3>
+                <span class="appointment-time">${this.formatTime(appointment.time)}</span>
+            </div>
+            <div class="appointment-details">
+                <span class="appointment-category">${this.getCategoryText(appointment.category)}</span>
+                <span class="appointment-priority ${appointment.priority}">${this.getPriorityText(appointment.priority)}</span>
+                <span class="appointment-status ${appointment.status}">${this.getStatusText(appointment.status)}</span>
+            </div>
+            ${appointment.description ? `<p class="appointment-description">${appointment.description}</p>` : ''}
+            ${appointment.location ? `<p class="appointment-location"><i class="fas fa-map-marker-alt"></i> ${appointment.location}</p>` : ''}
+            <div class="appointment-actions">
+                <button class="btn btn-primary btn-sm" onclick="app.editAppointment('${appointment.id}')">
+                    <i class="fas fa-edit"></i>
+                    <span>${this.getText('Edit', 'تعديل')}</span>
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="app.toggleAppointmentStatus('${appointment.id}')">
+                    <i class="fas fa-check"></i>
+                    <span>${this.getText('Complete', 'إكمال')}</span>
+                </button>
+                <button class="btn btn-danger btn-sm" onclick="app.deleteAppointment('${appointment.id}')">
+                    <i class="fas fa-trash"></i>
+                    <span>${this.getText('Delete', 'حذف')}</span>
+                </button>
+            </div>
+        `;
+
+        if (isOverdue) {
+            element.style.borderLeft = '4px solid var(--danger-color)';
+        }
+
+        return element;
+    }
+
+    formatTime(time) {
+        const [hours, minutes] = time.split(':');
+        const hour = parseInt(hours);
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const displayHour = hour % 12 || 12;
+        return `${displayHour}:${minutes} ${ampm}`;
+    }
+
+    getCategoryText(category) {
+        const categories = {
+            meeting: this.getText('Meeting', 'اجتماع'),
+            call: this.getText('Phone Call', 'مكالمة هاتفية'),
+            task: this.getText('Task', 'مهمة'),
+            deadline: this.getText('Deadline', 'موعد نهائي'),
+            reminder: this.getText('Reminder', 'تذكير'),
+            other: this.getText('Other', 'أخرى')
+        };
+        return categories[category] || category;
+    }
+
+    getPriorityText(priority) {
+        const priorities = {
+            urgent: this.getText('Urgent', 'عاجل'),
+            high: this.getText('High', 'عالية'),
+            medium: this.getText('Medium', 'متوسطة'),
+            low: this.getText('Low', 'منخفضة')
+        };
+        return priorities[priority] || priority;
+    }
+
+    getStatusText(status) {
+        const statuses = {
+            scheduled: this.getText('Scheduled', 'مجدول'),
+            'in-progress': this.getText('In Progress', 'قيد التنفيذ'),
+            completed: this.getText('Completed', 'مكتمل'),
+            cancelled: this.getText('Cancelled', 'ملغي')
+        };
+        return statuses[status] || status;
+    }
+
+    editAppointment(id) {
+        const appointment = this.data.appointments.find(apt => apt.id === id);
+        if (appointment) {
+            this.openAppointmentModal(appointment);
+        }
+    }
+
+    toggleAppointmentStatus(id) {
+        const appointment = this.data.appointments.find(apt => apt.id === id);
+        if (appointment) {
+            appointment.status = appointment.status === 'completed' ? 'scheduled' : 'completed';
+            this.saveData();
+            this.renderCalendar();
+            this.updateAppointmentStats();
+            this.renderAppointmentsList();
+        }
+    }
+
+    deleteAppointment(id) {
+        if (confirm(this.getText('Are you sure you want to delete this appointment?', 'هل أنت متأكد من حذف هذا الموعد؟'))) {
+            this.data.appointments = this.data.appointments.filter(apt => apt.id !== id);
+            this.saveData();
+            this.renderCalendar();
+            this.updateAppointmentStats();
+            this.renderAppointmentsList();
+            
+            this.showNotification(
+                this.getText('Appointment deleted successfully!', 'تم حذف الموعد بنجاح!'),
+                'success'
+            );
+        }
     }
 }
 

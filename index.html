@@ -87,6 +87,12 @@
                     </a>
                 </div>
                 <div class="nav-item">
+                    <a href="#work-schedule" class="nav-link" data-en="Work Schedule" data-ar="مواعيد العمل">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span>Work Schedule</span>
+                    </a>
+                </div>
+                <div class="nav-item">
                     <a href="#expenses" class="nav-link" data-en="Expenses" data-ar="المصاريف">
                         <i class="fas fa-receipt"></i>
                         <span>Expenses</span>
@@ -300,6 +306,87 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Work Schedule Section -->
+        <section id="work-schedule" class="content-section">
+            <div class="section-header">
+                <h1 data-en="Work Schedule" data-ar="جدول العمل">Work Schedule</h1>
+                <p data-en="Manage your regular work schedule and holidays" data-ar="إدارة جدول العمل العادي وأيام العطل">Manage your regular work schedule and holidays</p>
+            </div>
+            
+            <!-- Schedule Overview Cards -->
+            <div class="schedule-overview">
+                <div class="overview-card">
+                    <div class="overview-icon">
+                        <i class="fas fa-calendar-day"></i>
+                    </div>
+                    <div class="overview-content">
+                        <h3 data-en="Work Days" data-ar="أيام العمل">Work Days</h3>
+                        <p class="overview-number" id="work-days-count">5</p>
+                    </div>
+                </div>
+                
+                <div class="overview-card">
+                    <div class="overview-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="overview-content">
+                        <h3 data-en="Daily Hours" data-ar="الساعات اليومية">Daily Hours</h3>
+                        <p class="overview-number" id="daily-hours">8</p>
+                    </div>
+                </div>
+                
+                <div class="overview-card">
+                    <div class="overview-icon">
+                        <i class="fas fa-umbrella-beach"></i>
+                    </div>
+                    <div class="overview-content">
+                        <h3 data-en="Holidays" data-ar="أيام العطل">Holidays</h3>
+                        <p class="overview-number" id="holidays-count">2</p>
+                    </div>
+                </div>
+                
+                <div class="overview-card">
+                    <div class="overview-icon">
+                        <i class="fas fa-calendar-week"></i>
+                    </div>
+                    <div class="overview-content">
+                        <h3 data-en="Weekly Hours" data-ar="الساعات الأسبوعية">Weekly Hours</h3>
+                        <p class="overview-number" id="weekly-hours">40</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Weekly Schedule -->
+            <div class="weekly-schedule-section">
+                <div class="section-subheader">
+                    <h2 data-en="Weekly Work Schedule" data-ar="جدول العمل الأسبوعي">Weekly Work Schedule</h2>
+                    <button class="btn btn-primary" id="edit-schedule-btn">
+                        <i class="fas fa-edit"></i>
+                        <span data-en="Edit Schedule" data-ar="تعديل الجدول">Edit Schedule</span>
+                    </button>
+                </div>
+                
+                <div class="weekly-schedule-grid" id="weekly-schedule-grid">
+                    <!-- Weekly schedule will be populated by JavaScript -->
+                </div>
+            </div>
+            
+            <!-- Holidays Section -->
+            <div class="holidays-section">
+                <div class="section-subheader">
+                    <h2 data-en="Holidays & Days Off" data-ar="أيام العطل والإجازات">Holidays & Days Off</h2>
+                    <button class="btn btn-primary" id="add-holiday-btn">
+                        <i class="fas fa-plus"></i>
+                        <span data-en="Add Holiday" data-ar="إضافة عطلة">Add Holiday</span>
+                    </button>
+                </div>
+                
+                <div class="holidays-list" id="holidays-list">
+                    <!-- Holidays will be populated by JavaScript -->
                 </div>
             </div>
         </section>
@@ -578,6 +665,229 @@
             </div>
         </section>
 
+        <!-- Schedule Edit Modal -->
+        <div class="modal-container" id="schedule-edit-modal">
+            <div class="modal-overlay" onclick="app.closeScheduleModal()"></div>
+            <div class="modal schedule-modal">
+                <div class="modal-header">
+                    <h3 id="schedule-modal-title" data-en="Edit Work Schedule" data-ar="تعديل جدول العمل">Edit Work Schedule</h3>
+                    <button class="modal-close" onclick="app.closeScheduleModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="schedule-form" class="modern-form">
+                        <div class="schedule-days">
+                            <div class="schedule-day-item">
+                                <div class="day-header">
+                                    <label class="day-checkbox">
+                                        <input type="checkbox" id="monday-work" checked>
+                                        <span data-en="Monday" data-ar="الاثنين">Monday</span>
+                                    </label>
+                                </div>
+                                <div class="day-hours">
+                                    <div class="form-group">
+                                        <label data-en="Start Time" data-ar="وقت البداية">Start Time</label>
+                                        <input type="time" id="monday-start" value="09:00">
+                                    </div>
+                                    <div class="form-group">
+                                        <label data-en="End Time" data-ar="وقت النهاية">End Time</label>
+                                        <input type="time" id="monday-end" value="17:00">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="schedule-day-item">
+                                <div class="day-header">
+                                    <label class="day-checkbox">
+                                        <input type="checkbox" id="tuesday-work" checked>
+                                        <span data-en="Tuesday" data-ar="الثلاثاء">Tuesday</span>
+                                    </label>
+                                </div>
+                                <div class="day-hours">
+                                    <div class="form-group">
+                                        <label data-en="Start Time" data-ar="وقت البداية">Start Time</label>
+                                        <input type="time" id="tuesday-start" value="09:00">
+                                    </div>
+                                    <div class="form-group">
+                                        <label data-en="End Time" data-ar="وقت النهاية">End Time</label>
+                                        <input type="time" id="tuesday-end" value="17:00">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="schedule-day-item">
+                                <div class="day-header">
+                                    <label class="day-checkbox">
+                                        <input type="checkbox" id="wednesday-work" checked>
+                                        <span data-en="Wednesday" data-ar="الأربعاء">Wednesday</span>
+                                    </label>
+                                </div>
+                                <div class="day-hours">
+                                    <div class="form-group">
+                                        <label data-en="Start Time" data-ar="وقت البداية">Start Time</label>
+                                        <input type="time" id="wednesday-start" value="09:00">
+                                    </div>
+                                    <div class="form-group">
+                                        <label data-en="End Time" data-ar="وقت النهاية">End Time</label>
+                                        <input type="time" id="wednesday-end" value="17:00">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="schedule-day-item">
+                                <div class="day-header">
+                                    <label class="day-checkbox">
+                                        <input type="checkbox" id="thursday-work" checked>
+                                        <span data-en="Thursday" data-ar="الخميس">Thursday</span>
+                                    </label>
+                                </div>
+                                <div class="day-hours">
+                                    <div class="form-group">
+                                        <label data-en="Start Time" data-ar="وقت البداية">Start Time</label>
+                                        <input type="time" id="thursday-start" value="09:00">
+                                    </div>
+                                    <div class="form-group">
+                                        <label data-en="End Time" data-ar="وقت النهاية">End Time</label>
+                                        <input type="time" id="thursday-end" value="17:00">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="schedule-day-item">
+                                <div class="day-header">
+                                    <label class="day-checkbox">
+                                        <input type="checkbox" id="friday-work" checked>
+                                        <span data-en="Friday" data-ar="الجمعة">Friday</span>
+                                    </label>
+                                </div>
+                                <div class="day-hours">
+                                    <div class="form-group">
+                                        <label data-en="Start Time" data-ar="وقت البداية">Start Time</label>
+                                        <input type="time" id="friday-start" value="09:00">
+                                    </div>
+                                    <div class="form-group">
+                                        <label data-en="End Time" data-ar="وقت النهاية">End Time</label>
+                                        <input type="time" id="friday-end" value="17:00">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="schedule-day-item">
+                                <div class="day-header">
+                                    <label class="day-checkbox">
+                                        <input type="checkbox" id="saturday-work">
+                                        <span data-en="Saturday" data-ar="السبت">Saturday</span>
+                                    </label>
+                                </div>
+                                <div class="day-hours">
+                                    <div class="form-group">
+                                        <label data-en="Start Time" data-ar="وقت البداية">Start Time</label>
+                                        <input type="time" id="saturday-start" value="09:00">
+                                    </div>
+                                    <div class="form-group">
+                                        <label data-en="End Time" data-ar="وقت النهاية">End Time</label>
+                                        <input type="time" id="saturday-end" value="17:00">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="schedule-day-item">
+                                <div class="day-header">
+                                    <label class="day-checkbox">
+                                        <input type="checkbox" id="sunday-work">
+                                        <span data-en="Sunday" data-ar="الأحد">Sunday</span>
+                                    </label>
+                                </div>
+                                <div class="day-hours">
+                                    <div class="form-group">
+                                        <label data-en="Start Time" data-ar="وقت البداية">Start Time</label>
+                                        <input type="time" id="sunday-start" value="09:00">
+                                    </div>
+                                    <div class="form-group">
+                                        <label data-en="End Time" data-ar="وقت النهاية">End Time</label>
+                                        <input type="time" id="sunday-end" value="17:00">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i>
+                                <span data-en="Save Schedule" data-ar="حفظ الجدول">Save Schedule</span>
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="app.closeScheduleModal()">
+                                <i class="fas fa-times"></i>
+                                <span data-en="Cancel" data-ar="إلغاء">Cancel</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Holiday Modal -->
+        <div class="modal-container" id="holiday-modal">
+            <div class="modal-overlay" onclick="app.closeHolidayModal()"></div>
+            <div class="modal holiday-modal">
+                <div class="modal-header">
+                    <h3 id="holiday-modal-title" data-en="Add Holiday" data-ar="إضافة عطلة">Add Holiday</h3>
+                    <button class="modal-close" onclick="app.closeHolidayModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="holiday-form" class="modern-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="holiday-name" data-en="Holiday Name" data-ar="اسم العطلة">Holiday Name</label>
+                                <input type="text" id="holiday-name" required placeholder="New Year's Day">
+                            </div>
+                            <div class="form-group">
+                                <label for="holiday-type" data-en="Type" data-ar="النوع">Type</label>
+                                <select id="holiday-type" required>
+                                    <option value="public" data-en="Public Holiday" data-ar="عطلة رسمية">Public Holiday</option>
+                                    <option value="personal" data-en="Personal Leave" data-ar="إجازة شخصية">Personal Leave</option>
+                                    <option value="sick" data-en="Sick Leave" data-ar="إجازة مرضية">Sick Leave</option>
+                                    <option value="vacation" data-en="Vacation" data-ar="إجازة">Vacation</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="holiday-start-date" data-en="Start Date" data-ar="تاريخ البداية">Start Date</label>
+                                <input type="date" id="holiday-start-date" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="holiday-end-date" data-en="End Date" data-ar="تاريخ النهاية">End Date</label>
+                                <input type="date" id="holiday-end-date" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group full-width">
+                                <label for="holiday-description" data-en="Description" data-ar="الوصف">Description</label>
+                                <textarea id="holiday-description" rows="3" placeholder="Add details about the holiday..."></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i>
+                                <span data-en="Save Holiday" data-ar="حفظ العطلة">Save Holiday</span>
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="app.closeHolidayModal()">
+                                <i class="fas fa-times"></i>
+                                <span data-en="Cancel" data-ar="إلغاء">Cancel</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
         <!-- Edit Modal -->
         <div class="modal-container" id="edit-modal">
             <div class="modal-overlay" onclick="app.closeModal()"></div>
@@ -791,44 +1101,7 @@
                     </div>
                 </div>
 
-                <div class="settings-section">
-                    <h2 data-en="Cloud Backup (GitHub Gist)" data-ar="نسخ سحابي (GitHub Gist)">Cloud Backup (GitHub Gist)</h2>
-                    <form id="cloud-settings-form" class="modern-form">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="gist-token" data-en="GitHub Token" data-ar="رمز GitHub">GitHub Token</label>
-                                <input type="password" id="gist-token" placeholder="ghp_...">
-                            </div>
-                            <div class="form-group">
-                                <label for="gist-id" data-en="Gist ID (optional)" data-ar="معرّف Gist (اختياري)">Gist ID (optional)</label>
-                                <input type="text" id="gist-id" placeholder="e.g., a1b2c3...">
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="gist-filename" data-en="Filename" data-ar="اسم الملف">Filename</label>
-                                <input type="text" id="gist-filename" value="work-manager-backup.json">
-                            </div>
-                            <div class="form-group">
-                                <label for="cloud-passphrase" data-en="Encryption Passphrase (optional)" data-ar="كلمة مرور التشفير (اختياري)">Encryption Passphrase (optional)</label>
-                                <input type="password" id="cloud-passphrase" placeholder="••••••••">
-                            </div>
-                        </div>
-                        <div class="form-actions">
-                            <button type="button" class="btn btn-primary" id="cloud-backup-btn">
-                                <i class="fas fa-cloud-upload-alt"></i>
-                                <span data-en="Save to Cloud" data-ar="حفظ للسحابة">Save to Cloud</span>
-                            </button>
-                            <button type="button" class="btn btn-secondary" id="cloud-restore-btn">
-                                <i class="fas fa-cloud-download-alt"></i>
-                                <span data-en="Load from Cloud" data-ar="تحميل من السحابة">Load from Cloud</span>
-                            </button>
-                        </div>
-                    </form>
-                    <p class="mb-2" style="color: var(--text-secondary); font-size: 0.9rem;">
-                        <span data-en="Tip: create a Personal Access Token (gist scope) and keep it private. Optionally set a passphrase for client-side encryption." data-ar="نصيحة: أنشئ رمز وصول شخصي (صلاحية gist) واحتفظ به خاصًا. يمكنك استخدام كلمة مرور لتشفير البيانات محليًا.">Tip: create a Personal Access Token (gist scope) and keep it private. Optionally set a passphrase for client-side encryption.</span>
-                    </p>
-                </div>
+
             </div>
         </section>
     </main>
