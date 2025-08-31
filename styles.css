@@ -1049,6 +1049,18 @@ p {
     padding: 1rem;
     text-align: center;
     transition: var(--transition);
+    position: relative;
+    cursor: pointer;
+}
+
+.weekly-day-card.clickable {
+    cursor: pointer;
+}
+
+.weekly-day-card.clickable:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary-color);
 }
 
 .weekly-day-card.work-day {
@@ -1098,6 +1110,105 @@ p {
 .day-status.holiday {
     background: var(--warning-color);
     color: white;
+}
+
+.day-notes {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    background: var(--bg-tertiary);
+    padding: 0.5rem;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+    text-align: left;
+    max-height: 60px;
+    overflow-y: auto;
+    border-left: 3px solid var(--accent-color);
+}
+
+.day-edit-hint {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    opacity: 0.7;
+    transition: var(--transition);
+}
+
+.weekly-day-card:hover .day-edit-hint {
+    opacity: 1;
+    color: var(--primary-color);
+}
+
+/* Day Edit Modal Styles */
+.day-edit-modal .modal-body {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.day-type-toggle {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    cursor: pointer;
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    transition: var(--transition);
+}
+
+.day-type-toggle:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--primary-color);
+}
+
+.toggle-slider {
+    position: relative;
+    width: 50px;
+    height: 24px;
+    background: var(--text-muted);
+    border-radius: 12px;
+    transition: var(--transition);
+}
+
+.toggle-slider:before {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    transition: var(--transition);
+}
+
+.day-type-toggle input[type="checkbox"] {
+    display: none;
+}
+
+.day-type-toggle input[type="checkbox"]:checked + .toggle-slider {
+    background: var(--primary-color);
+}
+
+.day-type-toggle input[type="checkbox"]:checked + .toggle-slider:before {
+    transform: translateX(26px);
+}
+
+.toggle-label {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+#work-hours-row {
+    transition: var(--transition);
+}
+
+#work-hours-row.hidden {
+    display: none !important;
+    opacity: 0;
 }
 
 /* Holidays Section */
@@ -1251,6 +1362,15 @@ p {
     .holiday-actions {
         align-self: flex-end;
     }
+    
+    .day-notes {
+        font-size: 0.75rem;
+        max-height: 50px;
+    }
+    
+    .day-edit-hint {
+        font-size: 0.65rem;
+    }
 }
 
 @media (max-width: 480px) {
@@ -1260,6 +1380,23 @@ p {
     
     .schedule-overview {
         grid-template-columns: 1fr;
+    }
+    
+    .weekly-day-card {
+        padding: 0.75rem;
+    }
+    
+    .day-name {
+        font-size: 0.9rem;
+    }
+    
+    .day-hours {
+        font-size: 0.8rem;
+    }
+    
+    .day-status {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.4rem;
     }
 }
 
@@ -2375,6 +2512,81 @@ p {
     to {
         transform: rotate(360deg);
     }
+}
+
+.weekly-day-card:hover .day-edit-hint {
+    opacity: 1;
+    color: var(--primary-color);
+}
+
+/* Day Edit Modal Styles */
+.day-edit-modal .modal-body {
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.day-type-toggle {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    cursor: pointer;
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    transition: var(--transition);
+}
+
+.day-type-toggle:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--primary-color);
+}
+
+.toggle-slider {
+    position: relative;
+    width: 50px;
+    height: 24px;
+    background: var(--text-muted);
+    border-radius: 12px;
+    transition: var(--transition);
+}
+
+.toggle-slider:before {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    transition: var(--transition);
+}
+
+.day-type-toggle input[type="checkbox"] {
+    display: none;
+}
+
+.day-type-toggle input[type="checkbox"]:checked + .toggle-slider {
+    background: var(--primary-color);
+}
+
+.day-type-toggle input[type="checkbox"]:checked + .toggle-slider:before {
+    transform: translateX(26px);
+}
+
+.toggle-label {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+#work-hours-row {
+    transition: var(--transition);
+}
+
+#work-hours-row.hidden {
+    display: none !important;
+    opacity: 0;
 }
 
 

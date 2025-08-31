@@ -2001,15 +2001,22 @@ class WorkManagerApp {
         grid.innerHTML = days.map(day => {
             const schedule = this.data.workSchedule?.[day.key] || { start: '09:00', end: '17:00' };
             const isWorkDay = this.data.workSchedule?.[day.key]?.isWorkDay ?? day.isWorkDay;
+            const notes = this.data.workSchedule?.[day.key]?.notes || '';
             const status = isWorkDay ? 'work' : 'off';
             const statusText = isWorkDay ? this.getText('Work', 'عمل') : this.getText('Off', 'عطلة');
             const cardClass = isWorkDay ? 'work-day' : 'weekend';
+            const hasNotes = notes.trim() !== '';
 
             return `
-                <div class="weekly-day-card ${cardClass}">
+                <div class="weekly-day-card ${cardClass} clickable" data-day="${day.key}" onclick="app.openDayEditModal('${day.key}')">
                     <div class="day-name">${day.name}</div>
                     <div class="day-hours">${schedule.start} - ${schedule.end}</div>
                     <div class="day-status ${status}">${statusText}</div>
+                    ${hasNotes ? `<div class="day-notes">${notes}</div>` : ''}
+                    <div class="day-edit-hint">
+                        <i class="fas fa-edit"></i>
+                        <span data-en="Click to edit" data-ar="اضغط للتعديل">Click to edit</span>
+                    </div>
                 </div>
             `;
         }).join('');
@@ -2197,6 +2204,181 @@ class WorkManagerApp {
         const modal = document.getElementById('holiday-modal');
         modal.classList.remove('active');
         this.restoreFocus();
+    }
+
+    openDayEditModal(dayKey) {
+        const modal = document.getElementById('day-edit-modal');
+        if (!modal) {
+            this.createDayEditModal();
+        }
+        
+        const modalInstance = document.getElementById('day-edit-modal');
+        const modalTitle = document.getElementById('day-edit-modal-title');
+        const form = document.getElementById('day-edit-form');
+        
+        // تحديث عنوان النافذة
+        const dayNames = {
+            sunday: this.getText('Sunday', 'الأحد'),
+            monday: this.getText('Monday', 'الاثنين'),
+            tuesday: this.getText('Tuesday', 'الثلاثاء'),
+            wednesday: this.getText('Wednesday', 'الأربعاء'),
+            thursday: this.getText('Thursday', 'الخميس'),
+            friday: this.getText('Friday', 'الجمعة'),
+            saturday: this.getText('Saturday', 'السبت')
+        };
+        
+        modalTitle.textContent = this.getText('Edit', 'تعديل') + ' ' + dayNames[dayKey];
+        
+        // ملء النموذج بالبيانات الحالية
+        this.populateDayEditForm(dayKey);
+        
+        // تخزين مفتاح اليوم في النموذج
+        form.dataset.dayKey = dayKey;
+        
+        modalInstance.classList.add('active');
+        this.trapFocus(modalInstance);
+    }
+
+    createDayEditModal() {
+        // إنشاء النافذة المنبثقة إذا لم تكن موجودة
+        const modalHTML = `
+            <div class="modal-container" id="day-edit-modal">
+                <div class="modal-overlay" onclick="app.closeDayEditModal()"></div>
+                <div class="modal day-edit-modal">
+                    <div class="modal-header">
+                        <h3 id="day-edit-modal-title" data-en="Edit Day" data-ar="تعديل اليوم">Edit Day</h3>
+                        <button class="modal-close" onclick="app.closeDayEditModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="day-edit-form" class="modern-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label class="day-type-toggle">
+                                        <input type="checkbox" id="day-work-toggle">
+                                        <span class="toggle-slider"></span>
+                                        <span class="toggle-label" data-en="Work Day" data-ar="يوم عمل">Work Day</span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row" id="work-hours-row">
+                                <div class="form-group">
+                                    <label for="day-start-time" data-en="Start Time" data-ar="وقت البداية">Start Time</label>
+                                    <input type="time" id="day-start-time" value="09:00">
+                                </div>
+                                <div class="form-group">
+                                    <label for="day-end-time" data-en="End Time" data-ar="وقت النهاية">End Time</label>
+                                    <input type="time" id="day-end-time" value="17:00">
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group full-width">
+                                    <label for="day-notes" data-en="Notes" data-ar="ملاحظات">Notes</label>
+                                    <textarea id="day-notes" rows="3" placeholder="Add notes for this day..."></textarea>
+                                </div>
+                            </div>
+                            
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i>
+                                    <span data-en="Save Changes" data-ar="حفظ التغييرات">Save Changes</span>
+                                </button>
+                                <button type="button" class="btn btn-secondary" onclick="app.closeDayEditModal()">
+                                    <i class="fas fa-times"></i>
+                                    <span data-en="Cancel" data-ar="إلغاء">Cancel</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // إضافة النافذة إلى الصفحة
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+        // إضافة مستمع الأحداث للنموذج
+        const form = document.getElementById('day-edit-form');
+        form.addEventListener('submit', (e) => this.handleDayEditSubmit(e));
+        
+        // إضافة مستمع الأحداث لتبديل نوع اليوم
+        const workToggle = document.getElementById('day-work-toggle');
+        workToggle.addEventListener('change', () => this.toggleWorkHoursVisibility());
+    }
+
+    closeDayEditModal() {
+        const modal = document.getElementById('day-edit-modal');
+        if (modal) {
+            modal.classList.remove('active');
+            this.restoreFocus();
+        }
+    }
+
+    populateDayEditForm(dayKey) {
+        const schedule = this.data.workSchedule?.[dayKey] || { start: '09:00', end: '17:00', isWorkDay: false, notes: '' };
+        
+        const workToggle = document.getElementById('day-work-toggle');
+        const startTime = document.getElementById('day-start-time');
+        const endTime = document.getElementById('day-end-time');
+        const notes = document.getElementById('day-notes');
+        
+        if (workToggle) workToggle.checked = schedule.isWorkDay;
+        if (startTime) startTime.value = schedule.start;
+        if (endTime) endTime.value = schedule.end;
+        if (notes) notes.value = schedule.notes || '';
+        
+        // تحديث عرض ساعات العمل
+        this.toggleWorkHoursVisibility();
+    }
+
+    toggleWorkHoursVisibility() {
+        const workToggle = document.getElementById('day-work-toggle');
+        const workHoursRow = document.getElementById('work-hours-row');
+        
+        if (workToggle && workHoursRow) {
+            if (workToggle.checked) {
+                workHoursRow.style.display = 'flex';
+                workHoursRow.style.opacity = '1';
+            } else {
+                workHoursRow.style.display = 'none';
+                workHoursRow.style.opacity = '0';
+            }
+        }
+    }
+
+    handleDayEditSubmit(e) {
+        e.preventDefault();
+        
+        const form = e.target;
+        const dayKey = form.dataset.dayKey;
+        const workToggle = document.getElementById('day-work-toggle');
+        const startTime = document.getElementById('day-start-time');
+        const endTime = document.getElementById('day-end-time');
+        const notes = document.getElementById('day-notes');
+        
+        // تحديث بيانات الجدول
+        if (!this.data.workSchedule) {
+            this.data.workSchedule = {};
+        }
+        
+        this.data.workSchedule[dayKey] = {
+            isWorkDay: workToggle.checked,
+            start: startTime.value,
+            end: endTime.value,
+            notes: notes.value.trim()
+        };
+        
+        // حفظ البيانات وتحديث الواجهة
+        this.saveData();
+        this.renderWeeklySchedule();
+        this.updateScheduleStats();
+        this.closeDayEditModal();
+        
+        // عرض رسالة نجاح
+        this.showSuccessMessage(this.getText('Day schedule updated successfully!', 'تم تحديث جدول اليوم بنجاح!'));
     }
 
     setDefaultHolidayDates() {
@@ -2694,6 +2876,53 @@ class WorkManagerApp {
                 'success'
             );
         }
+    }
+
+    toggleWorkHoursVisibility() {
+        const workToggle = document.getElementById('day-work-toggle');
+        const workHoursRow = document.getElementById('work-hours-row');
+        
+        if (workToggle && workHoursRow) {
+            if (workToggle.checked) {
+                workHoursRow.style.display = 'flex';
+                workHoursRow.style.opacity = '1';
+            } else {
+                workHoursRow.style.display = 'none';
+                workHoursRow.style.opacity = '0';
+            }
+        }
+    }
+
+    handleDayEditSubmit(e) {
+        e.preventDefault();
+        
+        const form = e.target;
+        const dayKey = form.dataset.dayKey;
+        const workToggle = document.getElementById('day-work-toggle');
+        const startTime = document.getElementById('day-start-time');
+        const endTime = document.getElementById('day-end-time');
+        const notes = document.getElementById('day-notes');
+        
+        // تحديث بيانات الجدول
+        if (!this.data.workSchedule) {
+            this.data.workSchedule = {};
+        }
+        
+        this.data.workSchedule[dayKey] = {
+            isWorkDay: workToggle.checked,
+            start: startTime.value,
+            end: endTime.value,
+            notes: notes.value.trim()
+        };
+        
+        // حفظ البيانات وتحديث الواجهة
+        this.saveData();
+        this.renderWeeklySchedule();
+        this.updateScheduleStats();
+        this.closeDayEditModal();
+        
+        // عرض رسالة نجاح
+        this.showSuccessMessage(this.getText('Day schedule updated successfully!', 'تم تحديث جدول اليوم بنجاح!'));
     }
 }
 
