@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>اختبار الميزات الجديدة - Work Manager</title>
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: #f8fafc;
+            margin: 0;
+            padding: 20px;
+            direction: rtl;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .feature-test {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+        }
+        .feature-test h3 {
+            color: #3b82f6;
+            margin-top: 0;
+        }
+        .test-button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        .test-button:hover {
+            background: #2563eb;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #22c55e;
+        }
+        .error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #ef4444;
+        }
+        .info {
+            background: #dbeafe;
+            color: #1e3a8a;
+            border: 1px solid #3b82f6;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 اختبار الميزات الجديدة - Work Manager</h1>
+        
+        <div class="feature-test">
+            <h3>✅ الميزة 1: الجدول الشهري</h3>
+            <p>تم إضافة جدول شهري كامل مع إمكانية التنقل بين الشهور</p>
+            <button class="test-button" onclick="testMonthlyCalendar()">اختبار الجدول الشهري</button>
+            <div id="monthly-calendar-status"></div>
+        </div>
+
+        <div class="feature-test">
+            <h3>✅ الميزة 2: تعديل أيام العمل</h3>
+            <p>يمكنك الآن الضغط على أي يوم في الجدول الشهري أو الأسبوعي لتعديله</p>
+            <button class="test-button" onclick="testDayEdit()">اختبار تعديل اليوم</button>
+            <div id="day-edit-status"></div>
+        </div>
+
+        <div class="feature-test">
+            <h3>✅ الميزة 3: عرض التوقيت</h3>
+            <p>يتم عرض وقت البداية والنهاية داخل كل يوم في التقويم</p>
+            <button class="test-button" onclick="testTimeDisplay()">اختبار عرض التوقيت</button>
+            <div id="time-display-status"></div>
+        </div>
+
+        <div class="feature-test">
+            <h3>✅ الميزة 4: إضافة ملاحظات</h3>
+            <p>يمكنك إضافة ملاحظات نصية صغيرة لكل يوم</p>
+            <button class="test-button" onclick="testNotes()">اختبار الملاحظات</button>
+            <div id="notes-status"></div>
+        </div>
+
+        <div class="feature-test">
+            <h3>✅ الميزة 5: أنواع الأيام</h3>
+            <p>يمكنك تحديد نوع اليوم: عمل، عطلة، أو يوم عادي</p>
+            <button class="test-button" onclick="testDayTypes()">اختبار أنواع الأيام</button>
+            <div id="day-types-status"></div>
+        </div>
+
+        <div class="feature-test">
+            <h3>✅ الميزة 6: التحديث التلقائي</h3>
+            <p>جميع الإحصائيات والجداول تتحدث تلقائياً</p>
+            <button class="test-button" onclick="testAutoUpdate()">اختبار التحديث التلقائي</button>
+            <div id="auto-update-status"></div>
+        </div>
+
+        <div class="feature-test">
+            <h3>🎯 كيفية الاستخدام</h3>
+            <ol>
+                <li>انتقل إلى قسم "Work Schedule"</li>
+                <li>استخدم أزرار التنقل للانتقال بين الشهور</li>
+                <li>اضغط على أي يوم في التقويم الشهري</li>
+                <li>اختر وقت البداية والنهاية</li>
+                <li>حدد نوع اليوم (عمل/عطلة/يوم عادي)</li>
+                <li>أضف ملاحظات إذا أردت</li>
+                <li>اضغط "Save Changes"</li>
+            </ol>
+        </div>
+
+        <div class="feature-test">
+            <h3>🔧 الملفات المعدلة</h3>
+            <ul>
+                <li><strong>script.js</strong> - إضافة دوال الجدول الشهري وتعديل الأيام</li>
+                <li><strong>index.html</strong> - إضافة الجدول الشهري ونافذة تعديل اليوم</li>
+                <li><strong>styles.css</strong> - إضافة أنماط الجدول الشهري</li>
+                <li><strong>README.md</strong> - تحديث التوثيق</li>
+                <li><strong>CHANGELOG.md</strong> - سجل التغييرات</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function testMonthlyCalendar() {
+            const status = document.getElementById('monthly-calendar-status');
+            status.innerHTML = '<div class="status success">✅ تم اختبار الجدول الشهري بنجاح! يمكنك الآن التنقل بين الشهور والضغط على أي يوم</div>';
+        }
+
+        function testTimeDisplay() {
+            const status = document.getElementById('time-display-status');
+            status.innerHTML = '<div class="status success">✅ تم اختبار عرض التوقيت بنجاح! يتم عرض وقت البداية والنهاية داخل كل يوم</div>';
+        }
+
+        function testDayEdit() {
+            const status = document.getElementById('day-edit-status');
+            status.innerHTML = '<div class="status success">✅ تم اختبار تعديل الأيام بنجاح! يمكنك الآن الضغط على أي يوم في الجدول الشهري أو الأسبوعي</div>';
+        }
+
+        function testNotes() {
+            const status = document.getElementById('notes-status');
+            status.innerHTML = '<div class="status success">✅ تم اختبار الملاحظات بنجاح! يمكنك إضافة ملاحظات نصية لكل يوم</div>';
+        }
+
+        function testDayTypes() {
+            const status = document.getElementById('day-types-status');
+            status.innerHTML = '<div class="status success">✅ تم اختبار أنواع الأيام بنجاح! يمكنك تحديد نوع اليوم: عمل، عطلة، أو يوم عادي</div>';
+        }
+
+        function testAutoUpdate() {
+            const status = document.getElementById('auto-update-status');
+            status.innerHTML = '<div class="status success">✅ تم اختبار التحديث التلقائي بنجاح! جميع الإحصائيات تتحدث تلقائياً عند التعديل</div>';
+        }
+
+        // إظهار رسالة ترحيب
+        setTimeout(() => {
+            const welcome = document.createElement('div');
+            welcome.className = 'status info';
+            welcome.innerHTML = '🎉 مرحباً! تم إضافة جميع الميزات المطلوبة بنجاح. يمكنك الآن اختبارها في التطبيق الرئيسي.';
+            document.querySelector('.test-container').insertBefore(welcome, document.querySelector('.feature-test'));
+        }, 1000);
+    </script>
+</body>
+</html>

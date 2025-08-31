@@ -273,10 +273,57 @@
                 </div>
             </div>
             
-            <!-- Weekly Schedule -->
-            <div class="weekly-schedule-section">
+            <!-- Monthly Schedule -->
+            <div class="monthly-schedule-section">
+                <div class="section-subheader">
+                    <h2 data-en="Monthly Work Schedule" data-ar="جدول العمل الشهري">Monthly Work Schedule</h2>
+                    <div class="schedule-controls">
+                        <div class="calendar-controls">
+                            <button class="btn btn-secondary" id="prev-month-btn">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <h3 class="current-month" id="current-month">December 2024</h3>
+                            <button class="btn btn-secondary" id="next-month-btn">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                        <div class="schedule-actions">
+                            <button class="btn btn-primary" id="edit-schedule-btn">
+                                <i class="fas fa-edit"></i>
+                                <span data-en="Edit Schedule" data-ar="تعديل الجدول">Edit Schedule</span>
+                            </button>
+                            <button class="btn btn-secondary" id="today-btn">
+                                <i class="fas fa-calendar-day"></i>
+                                <span data-en="Today" data-ar="اليوم">Today</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="calendar-container">
+                    <div class="calendar-header">
+                        <div class="calendar-day-header" data-en="Sun" data-ar="أحد">Sun</div>
+                        <div class="calendar-day-header" data-en="Mon" data-ar="اثن">Mon</div>
+                        <div class="calendar-day-header" data-en="Tue" data-ar="ثلا">Tue</div>
+                        <div class="calendar-day-header" data-en="Wed" data-ar="أرب">Wed</div>
+                        <div class="calendar-day-header" data-en="Thu" data-ar="خمي">Thu</div>
+                        <div class="calendar-day-header" data-en="Fri" data-ar="جمع">Fri</div>
+                        <div class="calendar-day-header" data-en="Sat" data-ar="سبت">Sat</div>
+                    </div>
+                    <div class="calendar-grid" id="calendar-grid">
+                        <!-- Calendar days will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Weekly Schedule (Hidden by default, can be toggled) -->
+            <div class="weekly-schedule-section" style="display: none;">
                 <div class="section-subheader">
                     <h2 data-en="Weekly Work Schedule" data-ar="جدول العمل الأسبوعي">Weekly Work Schedule</h2>
+                    <button class="btn btn-primary" id="edit-weekly-schedule-btn">
+                        <i class="fas fa-edit"></i>
+                        <span data-en="Edit Schedule" data-ar="تعديل الجدول">Edit Schedule</span>
+                    </button>
                 </div>
                 
                 <div class="weekly-schedule-grid" id="weekly-schedule-grid">
@@ -788,6 +835,62 @@
                                 <span data-en="Save Holiday" data-ar="حفظ العطلة">Save Holiday</span>
                             </button>
                             <button type="button" class="btn btn-secondary" onclick="app.closeHolidayModal()">
+                                <i class="fas fa-times"></i>
+                                <span data-en="Cancel" data-ar="إلغاء">Cancel</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Day Edit Modal -->
+        <div class="modal-container" id="day-edit-modal">
+            <div class="modal-overlay" onclick="app.closeDayEditModal()"></div>
+            <div class="modal day-edit-modal">
+                <div class="modal-header">
+                    <h3 id="day-edit-modal-title" data-en="Edit Day" data-ar="تعديل اليوم">Edit Day</h3>
+                    <button class="modal-close" onclick="app.closeDayEditModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="day-edit-form" class="modern-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="day-start-time" data-en="Start Time" data-ar="وقت البداية">Start Time</label>
+                                <input type="time" id="day-start-time" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="day-end-time" data-en="End Time" data-ar="وقت النهاية">End Time</label>
+                                <input type="time" id="day-end-time" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="day-type" data-en="Day Type" data-ar="نوع اليوم">Day Type</label>
+                                <select id="day-type" required>
+                                    <option value="work" data-en="Work Day" data-ar="يوم عمل">Work Day</option>
+                                    <option value="off" data-en="Day Off" data-ar="يوم عطلة">Day Off</option>
+                                    <option value="holiday" data-en="Holiday" data-ar="عطلة">Holiday</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group full-width">
+                                <label for="day-notes" data-en="Notes" data-ar="ملاحظات">Notes</label>
+                                <textarea id="day-notes" rows="3" placeholder="Add notes about this day..."></textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-primary" id="save-day-btn" onclick="app.saveDaySettings()">
+                                <i class="fas fa-save"></i>
+                                <span data-en="Save Changes" data-ar="حفظ التغييرات">Save Changes</span>
+                            </button>
+                            <button type="button" class="btn btn-secondary" onclick="app.closeDayEditModal()">
                                 <i class="fas fa-times"></i>
                                 <span data-en="Cancel" data-ar="إلغاء">Cancel</span>
                             </button>
